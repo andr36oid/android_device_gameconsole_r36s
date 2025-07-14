@@ -1,0 +1,9 @@
+on post-fs-data
+    # Only run if we haven't resized userdata yet
+    start resize_userdata
+
+service resize_userdata /system/bin/resize_userdata.sh
+    class late_start
+    user root
+    oneshot
+    seclabel u:r:init:s0

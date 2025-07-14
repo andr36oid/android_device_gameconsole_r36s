@@ -21,6 +21,12 @@
 # definition file).
 #
 
+PRODUCT_PACKAGES += \
+    resize_userdata.sh
+    
+PRODUCT_COPY_FILES += \
+    device/gameconsole/r36s/ramdisk/init.resize_userdata.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/init.resize_userdata.rc
+
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
     ro.surface_flinger.primary_display_orientation=ORIENTATION_0 \
 

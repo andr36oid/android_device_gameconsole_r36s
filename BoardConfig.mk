@@ -1,4 +1,4 @@
-PLATFORM_PATH := device/anbernic/r36s
+PLATFORM_PATH := device/gameconsole/r36s
 TARGET_SCREEN_DENSITY 		:= 178
 # Camera
 USE_CAMERA_STUB := false

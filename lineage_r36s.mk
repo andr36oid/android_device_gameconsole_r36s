@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include device/anbernic/common/BoardConfig.mk
+include device/gameconsole/common/BoardConfig.mk
 
 # Inherit from hardware-specific part of the product configuration
-$(call inherit-product, device/anbernic/common/device.mk)
+$(call inherit-product, device/gameconsole/common/device.mk)
 
 # Inherit from device-specific part of the product configuration
-$(call inherit-product, device/anbernic/r36s/device.mk)
+$(call inherit-product, device/gameconsole/r36s/device.mk)
 
 # Boot animation
 TARGET_SCREEN_HEIGHT := 480

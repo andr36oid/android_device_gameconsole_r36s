@@ -4,7 +4,7 @@ LINEAGEVERSION=lineage-18.1
 DATE=`date -u +%Y%m%d`
 DEVICE=r36s-android
 IMGNAME=$LINEAGEVERSION-$DATE-$DEVICE.img
-IMGSIZE=8
+IMGSIZE=3
 OUTDIR=${ANDROID_PRODUCT_OUT:="../../../out/target/product/r36s"}
 
 if [ `id -u` != 0 ]; then
@@ -17,10 +17,9 @@ if [ -f $IMGNAME ]; then
 else
     echo "Copying over kernel files"
     cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/Image BOOT/
-	cp ../common/resizing/prebuilt/uInitrd BOOT/
+	cp ../common/resizing/prebuilt/Image-resizing BOOT/
     cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE.dtb BOOT/
-    # Workaround, copy over as mplus dtb also because u-boot is hardcoded to check for this.
-    #cp BOOT/uboot-dtb BOOT/rg351mp-kernel.dtb
+    cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE.dtb BOOT/rk3326-rg351mplus.dtb
 	echo "Creating image file $IMGNAME..."
 	dd if=/dev/zero of=$IMGNAME bs=1M count=$(echo "$IMGSIZE*1024" | bc)
 	sync
@@ -32,14 +31,11 @@ else
 	dd if=uboot.img of=$IMGNAME bs=512 skip=1 seek=1 count=32767 conv=notrunc
 	# Making BOOT partitions (size 1081344 sector - 32768 sector = 1048576  sectors * 512 = 512MiB)
 	parted -s $IMGNAME mkpart primary fat32 32768s 1081343s
-    parted -s $IMGNAME name 1 BOOT
     # Set boot flag
     parted -s $IMGNAME set 1 boot on
 	# Making rootfs partitions (size 1Gi)
 	parted -s $IMGNAME mkpart primary ext4 1081344s 5701008s
-    parted -s $IMGNAME name 2 system
 	parted -s $IMGNAME mkpart primary ext4 5701009s 100%
-    parted -s $IMGNAME name 3 userdata
 	# Verify
 	parted $IMGNAME print
 	sync
@@ -75,4 +71,7 @@ else
     echo "Cleanup..."
     rm BOOT/Image*
     rm BOOT/*.dtb
+	dd if=uboot.img of=$IMGNAME bs=512 skip=1 seek=1 count=32767 conv=notrunc
+	parted -s $IMGNAME mkpart primary ext2 0% 32767s
+	parted -s $IMGNAME rm 3
 fi

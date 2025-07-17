@@ -4,7 +4,7 @@ LINEAGEVERSION=lineage-18.1
 DATE=`date -u +%Y%m%d`
 DEVICE=r36s-android
 IMGNAME=$LINEAGEVERSION-$DATE-$DEVICE.img
-IMGSIZE=3
+IMGSIZE=8
 OUTDIR=${ANDROID_PRODUCT_OUT:="../../../out/target/product/r36s"}
 
 if [ `id -u` != 0 ]; then
@@ -17,6 +17,7 @@ if [ -f $IMGNAME ]; then
 else
     echo "Copying over kernel files"
     cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/Image BOOT/
+	cp ../common/resizing/prebuilt/uInitrd BOOT/
     cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE.dtb BOOT/
     # Workaround, copy over as mplus dtb also because u-boot is hardcoded to check for this.
     #cp BOOT/uboot-dtb BOOT/rg351mp-kernel.dtb

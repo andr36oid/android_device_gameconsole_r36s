@@ -3,7 +3,7 @@
 LINEAGEVERSION=lineage-18.1
 DATE=`date -u +%Y%m%d`
 TIME=`date -u +%H%M`
-DEVICE=r36s-android
+DEVICE=r36splus-android
 IMGNAME=$LINEAGEVERSION-$DATE-$TIME-$DEVICE.img
 IMGSIZE=3
 OUTDIR=${ANDROID_PRODUCT_OUT:="../../../out/target/product/r36s"}
@@ -19,14 +19,7 @@ else
     echo "Copying over kernel files"
     cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/Image BOOT/
 	cp ../common/resizing/prebuilt/Image-resizing BOOT/
-    cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel0.dtb BOOT/Panels/Panel0/rk3326-r36s-android.dtb
-	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel1.dtb BOOT/Panels/Panel1/rk3326-r36s-android.dtb
-	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel2.dtb BOOT/Panels/Panel2/rk3326-r36s-android.dtb
-	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel3.dtb BOOT/Panels/Panel3/rk3326-r36s-android.dtb
-	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dtb BOOT/Panels/Panel4/rk3326-r36s-android.dtb
-	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel5.dtb BOOT/Panels/Panel5/rk3326-r36s-android.dtb
-
-	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dtb BOOT/rk3326-r36s-android.dtb
+	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE.dtb BOOT/rk3326-r36s-android.dtb
     cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE.dtb BOOT/rk3326-rg351mplus.dtb
 	echo "Creating image file $IMGNAME..."
 	dd if=/dev/zero of=$IMGNAME bs=1M count=$(echo "$IMGSIZE*1024" | bc)
@@ -69,7 +62,8 @@ else
 	mount /dev/mapper/${LOOPDEV}p1 sdcard/BOOT
 	sync
 	cp -R BOOT/* sdcard/BOOT
-    mv sdcard/BOOT/uboot-dtb sdcard/BOOT/rg351mp-kernel.dtb
+    cp sdcard/BOOT/Panels/Plus/rg351mp-kernel.dtb sdcard/BOOT/rg351mp-kernel.dtb
+	cp sdcard/BOOT/Panels/Plus/logo.bmp sdcard/BOOT/logo.bmp
 	sync
 	umount /dev/mapper/${LOOPDEV}p1
 	rm -rf sdcard
@@ -79,13 +73,6 @@ else
     echo "Cleanup..."
     rm BOOT/Image*
     rm BOOT/*.dtb
-	rm BOOT/Panels/Panel0/rk3326-r36s-android.dtb
-	rm BOOT/Panels/Panel1/rk3326-r36s-android.dtb
-	rm BOOT/Panels/Panel2/rk3326-r36s-android.dtb
-	rm BOOT/Panels/Panel3/rk3326-r36s-android.dtb
-	rm BOOT/Panels/Panel4/rk3326-r36s-android.dtb
-	rm BOOT/Panels/Panel5/rk3326-r36s-android.dtb
-	
 	dd if=uboot.img of=$IMGNAME bs=512 skip=1 seek=1 count=32767 conv=notrunc
 	parted -s $IMGNAME mkpart primary ext2 0% 32767s
 	parted -s $IMGNAME rm 3

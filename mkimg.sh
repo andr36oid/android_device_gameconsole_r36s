@@ -25,6 +25,7 @@ else
 	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel3.dtb BOOT/Panels/Panel3/rk3326-r36s-android.dtb
 	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dtb BOOT/Panels/Panel4/rk3326-r36s-android.dtb
 	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel5.dtb BOOT/Panels/Panel5/rk3326-r36s-android.dtb
+	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel6.dtb BOOT/Panels/Panel6/rk3326-r36s-android.dtb
 
 	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dtb BOOT/rk3326-r36s-android.dtb
     cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE.dtb BOOT/rk3326-rg351mplus.dtb
@@ -85,6 +86,7 @@ else
 	rm BOOT/Panels/Panel3/rk3326-r36s-android.dtb
 	rm BOOT/Panels/Panel4/rk3326-r36s-android.dtb
 	rm BOOT/Panels/Panel5/rk3326-r36s-android.dtb
+	rm BOOT/Panels/Panel6/rk3326-r36s-android.dtb
 	
 	dd if=uboot.img of=$IMGNAME bs=512 skip=1 seek=1 count=32767 conv=notrunc
 	parted -s $IMGNAME mkpart primary ext2 0% 32767s

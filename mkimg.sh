@@ -29,7 +29,6 @@ else
 	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel6.dtb BOOT/Panels/Panel6/rk3326-r36s-android.dtb
 
 	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dtb BOOT/rk3326-r36s-android.dtb
-    cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dtb BOOT/rk3326-rg351mplus.dtb
 	echo "Creating image file $IMGNAME..."
 	dd if=/dev/zero of=$IMGNAME bs=1M count=$(echo "$IMGSIZE*1024" | bc)
 	sync

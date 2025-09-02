@@ -19,7 +19,7 @@ else
     echo "Copying over kernel files"
     cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/Image BOOT/
 	cp ../common/resizing/prebuilt/Image-resizing BOOT/
-	cp ../common/resizing/prebuilt/Image-recovery BOOT/
+	cp ./Image-recovery BOOT/
     cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel0.dtb BOOT/Panels/Panel0/rk3326-r36s-android.dtb
 	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel1.dtb BOOT/Panels/Panel1/rk3326-r36s-android.dtb
 	cp $OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel2.dtb BOOT/Panels/Panel2/rk3326-r36s-android.dtb

@@ -15,6 +15,9 @@
 
 include device/gameconsole/common/BoardConfig.mk
 
+# Uncomment to only run the 64-bit zygote (saves RAM, breaks 32-bit-only apps).
+#TARGET_GAMECONSOLE_ZYGOTE64_ONLY := true
+
 # Inherit from hardware-specific part of the product configuration
 $(call inherit-product, device/gameconsole/common/device.mk)
 

@@ -94,7 +94,7 @@ def bugdroid(d, cx, cy, r, green, white, bg):
         disc(d, cx + s * 0.42 * r, cy - 0.42 * r, 0.10 * r, white)
 
 
-def render(W, H, title, subtitle, build="", ss=4):
+def render(W, H, title, subtitle, build="", credits="", ss=4):
     w, h = W * ss, H * ss
     u = min(w, h)
     im = Image.new("RGB", (w, h), BLACK)
@@ -116,13 +116,30 @@ def render(W, H, title, subtitle, build="", ss=4):
     ty = h * 0.46
     draw_tracked(d, f_t, (tx, ty), title, track, WHITE)
 
+    # ---- credits, centred right above the title, monospace
+    if credits:
+        # "prefix from name1 - name2 - name3": names bold, separators as middle dots
+        f_c = font("DejaVuSansMono.ttf", 0.036 * u)
+        f_cb = font("DejaVuSansMono-Bold.ttf", 0.036 * u)
+        prefix, _, names = credits.rpartition(" from ")
+        segs = [(prefix + " from ", f_c)] if names else []
+        for i, n in enumerate((names or credits).split(" - ")):
+            if i:
+                segs.append((" \u00b7 ", f_c))
+            segs.append((n, f_cb))
+        cy = ty - cap_h(f_t) - 0.045 * u
+        x = (w - sum(text_w(f, t) for t, f in segs)) / 2
+        for txt, f in segs:
+            d.text((x, cy), txt, font=f, fill=DIM, anchor="ls")
+            x += text_w(f, txt)
+
     # ---- subtitle, right-aligned to title
     f_s = font("Roboto-Light.ttf", 0.066 * u)
     d.text((tx + tw, ty + 0.045 * u + cap_h(f_s)), subtitle, font=f_s, fill=LIGHT, anchor="rs")
 
     # ---- build number, top right, monospace
+    f_b = font("DejaVuSansMono.ttf", 0.036 * u)
     if build:
-        f_b = font("DejaVuSansMono.ttf", 0.036 * u)
         d.text((w - margin, margin + cap_h(f_b)), build, font=f_b, fill=DIM, anchor="rs")
 
     # ---- footer blocks; shrink both if they would collide on narrow screens
@@ -172,9 +189,11 @@ def main():
     p.add_argument("--title", default="andr36oid")
     p.add_argument("--subtitle", default="RK3326 Community")
     p.add_argument("--build", default="", help="build number, ISO date e.g. 2026-09-10 (omit to hide)")
+    p.add_argument("--credits", default="with love from snaccy - kenny - kauan",
+                   help='"<prefix> from a - b - c"; names go bold, hyphens become middle dots ("" to hide)')
     a = p.parse_args()
 
-    im = render(a.width, a.height, a.title, a.subtitle, a.build)
+    im = render(a.width, a.height, a.title, a.subtitle, a.build, a.credits)
     im.save(a.out, "BMP")
     if a.png:
         im.save(a.png, "PNG")

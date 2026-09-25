@@ -21,6 +21,7 @@ WHITE = (255, 255, 255)
 LIGHT = (220, 220, 220)
 DIM = (135, 135, 135)
 GREEN = (0x3D, 0xDC, 0x84)
+LINEAGE = (0x16, 0x7C, 0x80)   # LineageOS teal
 
 
 def font(name, px):
@@ -119,27 +120,40 @@ def render(W, H, title, subtitle, ss=4):
     f_s = font("Roboto-Light.ttf", 0.066 * u)
     d.text((tx + tw, ty + 0.045 * u + cap_h(f_s)), subtitle, font=f_s, fill=LIGHT, anchor="rs")
 
-    # ---- Powered by android (bottom right)
-    f_pb = font("Roboto-Regular.ttf", 0.040 * u)
-    f_an = font("Roboto-Medium.ttf", 0.080 * u)
-    head_r = 0.038 * u
-    base_y = h - margin
-    head_cx = w - margin - head_r
-    an_w = text_w(f_an, "android")
-    an_x = head_cx - head_r - 0.022 * u - an_w
-    bugdroid(d, head_cx, base_y - 0.004 * u, head_r, GREEN, WHITE, BLACK)
-    d.text((an_x, base_y), "android", font=f_an, fill=WHITE, anchor="ls")
-    d.text((an_x, base_y - cap_h(f_an) - 0.020 * u), "Powered by", font=f_pb, fill=LIGHT, anchor="ls")
+    # ---- footer blocks; shrink both if they would collide on narrow screens
+    def footer(k):
+        f_pb = font("Roboto-Regular.ttf", 0.040 * u * k)
+        f_an = font("Roboto-Medium.ttf", 0.080 * u * k)
+        f_lo = font("Roboto-Medium.ttf", 0.070 * u * k)
+        f_lp = font("Roboto-Regular.ttf", 0.040 * u * k)
+        head_r = 0.038 * u * k
+        R = 0.038 * u * k
+        an_block = text_w(f_an, "android") + 0.022 * u * k + 2 * head_r
+        lo_block = 4.2 * R + 0.025 * u * k + text_w(f_lo, "LineageOS")
+        return f_pb, f_an, f_lo, f_lp, head_r, R, an_block, lo_block
 
-    # ---- Powered by LineageOS (bottom left, dimmed)
-    f_lo = font("Roboto-Regular.ttf", 0.050 * u)
-    f_lp = font("Roboto-Light.ttf", 0.034 * u)
-    R = 0.030 * u
+    k = 1.0
+    f_pb, f_an, f_lo, f_lp, head_r, R, an_block, lo_block = footer(k)
+    avail = w - 2 * margin - 0.08 * u
+    if an_block + lo_block > avail:
+        k = avail / (an_block + lo_block)
+        f_pb, f_an, f_lo, f_lp, head_r, R, an_block, lo_block = footer(k)
+
+    base_y = h - margin
+
+    # Powered by android (bottom right), grey except the bugdroid
+    head_cx = w - margin - head_r
+    an_x = head_cx - head_r - 0.022 * u * k - text_w(f_an, "android")
+    bugdroid(d, head_cx, base_y - 0.004 * u, head_r, GREEN, WHITE, BLACK)
+    d.text((an_x, base_y), "android", font=f_an, fill=DIM, anchor="ls")
+    d.text((an_x, base_y - cap_h(f_an) - 0.020 * u * k), "Powered by", font=f_pb, fill=DIM, anchor="ls")
+
+    # Powered by LineageOS (bottom left), Lineage teal
     mark_cx = margin + 2.1 * R
-    text_x = margin + 4.2 * R + 0.025 * u
-    lineage_mark(d, mark_cx, base_y - 0.5 * cap_h(f_lo) - 0.2 * R, R, DIM, BLACK)
-    d.text((text_x, base_y), "LineageOS", font=f_lo, fill=DIM, anchor="ls")
-    d.text((text_x, base_y - cap_h(f_lo) - 0.016 * u), "Powered by", font=f_lp, fill=DIM, anchor="ls")
+    text_x = margin + 4.2 * R + 0.025 * u * k
+    lineage_mark(d, mark_cx, base_y - 0.5 * cap_h(f_lo) - 0.2 * R, R, LINEAGE, BLACK)
+    d.text((text_x, base_y), "LineageOS", font=f_lo, fill=LINEAGE, anchor="ls")
+    d.text((text_x, base_y - cap_h(f_lo) - 0.020 * u * k), "Powered by", font=f_lp, fill=LINEAGE, anchor="ls")
 
     return im.resize((W, H), Image.LANCZOS)
 

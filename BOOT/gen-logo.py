@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Procedural boot logo generator for andr36oid.
 
-Usage: gen-logo.py [-w W] [-H H] [-o out.bmp] [--png preview.png] [--title S] [--subtitle S]
+Usage: gen-logo.py [-w W] [-H H] [-o out.bmp] [--png preview.png] [--title S] [--subtitle S] [--build 2026-09-10]
 
 Layout is relative to the shorter screen edge so any resolution works.
 Renders at 4x and downsamples for anti-aliasing. Output: 24-bit BMP for U-Boot.
@@ -94,7 +94,7 @@ def bugdroid(d, cx, cy, r, green, white, bg):
         disc(d, cx + s * 0.42 * r, cy - 0.42 * r, 0.10 * r, white)
 
 
-def render(W, H, title, subtitle, ss=4):
+def render(W, H, title, subtitle, build="", ss=4):
     w, h = W * ss, H * ss
     u = min(w, h)
     im = Image.new("RGB", (w, h), BLACK)
@@ -119,6 +119,11 @@ def render(W, H, title, subtitle, ss=4):
     # ---- subtitle, right-aligned to title
     f_s = font("Roboto-Light.ttf", 0.066 * u)
     d.text((tx + tw, ty + 0.045 * u + cap_h(f_s)), subtitle, font=f_s, fill=LIGHT, anchor="rs")
+
+    # ---- build number, top right, monospace
+    if build:
+        f_b = font("DejaVuSansMono.ttf", 0.036 * u)
+        d.text((w - margin, margin + cap_h(f_b)), build, font=f_b, fill=DIM, anchor="rs")
 
     # ---- footer blocks; shrink both if they would collide on narrow screens
     def footer(k):
@@ -166,9 +171,10 @@ def main():
     p.add_argument("--png")
     p.add_argument("--title", default="andr36oid")
     p.add_argument("--subtitle", default="RK3326 Community")
+    p.add_argument("--build", default="", help="build number, ISO date e.g. 2026-09-10 (omit to hide)")
     a = p.parse_args()
 
-    im = render(a.width, a.height, a.title, a.subtitle)
+    im = render(a.width, a.height, a.title, a.subtitle, a.build)
     im.save(a.out, "BMP")
     if a.png:
         im.save(a.png, "PNG")

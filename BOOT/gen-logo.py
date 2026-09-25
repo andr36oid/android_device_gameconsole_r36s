@@ -22,6 +22,7 @@ LIGHT = (220, 220, 220)
 DIM = (135, 135, 135)
 GREEN = (0x3D, 0xDC, 0x84)
 LINEAGE = (0x16, 0x7C, 0x80)   # LineageOS teal
+HEART = (0x7A, 0x0A, 0x14)     # very dark red
 
 
 def font(name, px):
@@ -82,6 +83,17 @@ def lineage_mark(d, cx, cy, R, fill, bg):
     ring(d, cx + sx, cy + sy, 0.45 * R, 0.22 * R, fill, bg)
 
 
+def heart(d, x, baseline, size, fill):
+    """Heart glyph, left edge at x, sitting on the baseline. Returns advance width."""
+    top = baseline - size
+    r = size / 4
+    cx = x + size / 2
+    disc(d, cx - r, top + r, r, fill)
+    disc(d, cx + r, top + r, r, fill)
+    d.polygon([(cx - 2 * r, top + r), (cx, top + 2 * r * 0.55), (cx + 2 * r, top + r), (cx, baseline)], fill=fill)
+    return size
+
+
 def bugdroid(d, cx, cy, r, green, white, bg):
     """Android head. r = radius, (cx, cy) = centre of the flat base."""
     disc(d, cx, cy, r, green)
@@ -118,28 +130,39 @@ def render(W, H, title, subtitle, build="", credits="", ss=4):
 
     # ---- credits, centred right above the title, monospace
     if credits:
-        # "prefix from name1 - name2 - name3": names bold, separators as middle dots
+        # "prefix from name1 - name2 - name3": names bold, hyphens as middle dots, "<3" as a heart
         f_c = font("DejaVuSansMono.ttf", 0.036 * u)
         f_cb = font("DejaVuSansMono-Bold.ttf", 0.036 * u)
+        hs = cap_h(f_c) * 1.15
         prefix, _, names = credits.rpartition(" from ")
-        segs = [(prefix + " from ", f_c)] if names else []
+        segs = []
+        if names:
+            for i, tok in enumerate((prefix + " from").split(" ")):
+                if i:
+                    segs.append((" ", f_c))
+                segs.append((None, hs) if tok == "<3" else (tok, f_c))
+            segs.append((" ", f_c))
         for i, n in enumerate((names or credits).split(" - ")):
             if i:
                 segs.append((" \u00b7 ", f_c))
             segs.append((n, f_cb))
+        total = sum(f if t is None else text_w(f, t) for t, f in segs)
         cy = ty - cap_h(f_t) - 0.045 * u
-        x = (w - sum(text_w(f, t) for t, f in segs)) / 2
+        x = (w - total) / 2
         for txt, f in segs:
-            d.text((x, cy), txt, font=f, fill=DIM, anchor="ls")
-            x += text_w(f, txt)
+            if txt is None:
+                x += heart(d, x, cy, f, HEART)
+            else:
+                d.text((x, cy), txt, font=f, fill=DIM, anchor="ls")
+                x += text_w(f, txt)
 
     # ---- subtitle, right-aligned to title
     f_s = font("Roboto-Light.ttf", 0.066 * u)
     d.text((tx + tw, ty + 0.045 * u + cap_h(f_s)), subtitle, font=f_s, fill=LIGHT, anchor="rs")
 
     # ---- build number, top right, monospace
-    f_b = font("DejaVuSansMono.ttf", 0.036 * u)
     if build:
+        f_b = font("DejaVuSansMono.ttf", 0.036 * u)
         d.text((w - margin, margin + cap_h(f_b)), build, font=f_b, fill=DIM, anchor="rs")
 
     # ---- footer blocks; shrink both if they would collide on narrow screens
@@ -189,8 +212,8 @@ def main():
     p.add_argument("--title", default="andr36oid")
     p.add_argument("--subtitle", default="RK3326 Community")
     p.add_argument("--build", default="", help="build number, ISO date e.g. 2026-09-10 (omit to hide)")
-    p.add_argument("--credits", default="with love from snaccy - kenny - kauan",
-                   help='"<prefix> from a - b - c"; names go bold, hyphens become middle dots ("" to hide)')
+    p.add_argument("--credits", default="with <3 from snaccy - kenny - kauan",
+                   help='"<prefix> from a - b - c"; names go bold, hyphens become middle dots, <3 becomes a heart ("" to hide)')
     a = p.parse_args()
 
     im = render(a.width, a.height, a.title, a.subtitle, a.build, a.credits)

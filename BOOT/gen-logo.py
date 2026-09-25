@@ -146,12 +146,12 @@ def render(W, H, title, subtitle, build="", ss=4):
 
     base_y = h - margin
 
-    # Powered by android (bottom right), grey except the bugdroid
+    # Based on android (bottom right), grey except the bugdroid
     head_cx = w - margin - head_r
     an_x = head_cx - head_r - 0.022 * u * k - text_w(f_an, "android")
     bugdroid(d, head_cx, base_y - 0.004 * u, head_r, GREEN, WHITE, BLACK)
     d.text((an_x, base_y), "android", font=f_an, fill=DIM, anchor="ls")
-    d.text((an_x, base_y - cap_h(f_an) - 0.020 * u * k), "Powered by", font=f_pb, fill=DIM, anchor="ls")
+    d.text((an_x, base_y - cap_h(f_an) - 0.020 * u * k), "Based on", font=f_pb, fill=DIM, anchor="ls")
 
     # Powered by LineageOS (bottom left), Lineage teal
     mark_cx = margin + 2.1 * R

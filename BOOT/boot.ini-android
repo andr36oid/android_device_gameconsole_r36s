@@ -2,7 +2,7 @@ odroidgoa-uboot-config
 
 setenv bootrootfs "root=/dev/mmcblk0p2 fw_devlink=permissive rootfstype=ext4 rootwait init=/init consoleblank=0 swiotlb=1 coherent_pool=1m"
 
-setenv console "console=ttyS2,115200n8 androidboot.console=tty0" 
+setenv console "console=ttyS2,115200n8 androidboot.console=ttyS2 vt.global_cursor_default=0" 
 
 setenv android "firmware_class.path=/vendor/firmware androidboot.hardware=rk30board androidboot.selinux=permissive"
 

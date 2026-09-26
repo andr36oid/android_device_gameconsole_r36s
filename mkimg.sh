@@ -98,6 +98,10 @@ if python3 -c 'import PIL' 2>/dev/null; then
 else
     echo "Pillow not found, keeping the committed boot logos"
 fi
+# U-Boot shows logo_kernel.bmp while starting the kernel and hands it over, so the
+# screen stays on the logo until Android draws instead of going blank
+cp "$BOOT_TMP/logo.bmp" "$BOOT_TMP/logo_kernel.bmp"
+cp "$BOOT_TMP/Panels/Plus/logo.bmp" "$BOOT_TMP/Panels/Plus/logo_kernel.bmp"
 # The generator isn't needed on the card
 rm -rf "$BOOT_TMP/gen-logo.py" "$BOOT_TMP/fonts"
 if [ -f "$BOOT_TMP/uboot-dtb" ]; then

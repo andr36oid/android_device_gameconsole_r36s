@@ -89,6 +89,17 @@ $MKFS_FAT -F 32 -n BOOT "$BOOT_IMG"
 BOOT_TMP="$TMPDIR/BOOT_COPY"
 mkdir -p "$BOOT_TMP"
 cp -a BOOT/* "$BOOT_TMP"/ || true
+# Boot logos with the build's version, the committed ones stay as a fallback
+VERSION=$(sed -n 's/^ro.andr36oid.version=//p' "$OUTDIR/system/product/build.prop" 2>/dev/null || true)
+if python3 -c 'import PIL' 2>/dev/null; then
+    echo "Drawing boot logos for ${VERSION:-an unknown version}"
+    python3 BOOT/gen-logo.py --build "$VERSION" -o "$BOOT_TMP/logo.bmp"
+    python3 BOOT/gen-logo.py --build "$VERSION" -w 720 -H 720 -o "$BOOT_TMP/Panels/Plus/logo.bmp"
+else
+    echo "Pillow not found, keeping the committed boot logos"
+fi
+# The generator isn't needed on the card
+rm -rf "$BOOT_TMP/gen-logo.py" "$BOOT_TMP/fonts"
 if [ -f "$BOOT_TMP/uboot-dtb" ]; then
     mv "$BOOT_TMP/uboot-dtb" "$BOOT_TMP/rg351mp-kernel.dtb"
 fi

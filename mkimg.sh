@@ -39,13 +39,26 @@ echo "Creating image file $IMGNAME..."
 truncate -s "${IMGSIZE}G" "$IMGNAME"
 sync
 
+# The first-boot resizer (Image-resizing) runs "parted mkpart" for userdata and
+# EASYROMS after 5701009s, and parted gives them the lowest free numbers. So
+# numbers 6 and 7 are held by placeholders while vendor, metadata, misc and
+# cache are created, and freed again, to keep userdata p6 and EASYROMS p7.
+# The old BOOT partition's second half is where vendor and the rest now live.
 echo "Creating partitions (GPT) on $IMGNAME..."
 parted -s "$IMGNAME" mktable gpt
-parted -s "$IMGNAME" mkpart BOOT fat32 32768s 1081343s
+parted -s "$IMGNAME" mkpart BOOT fat32 32768s 557055s
 parted -s "$IMGNAME" mkpart system ext4 1081344s 5701008s
 parted -s "$IMGNAME" mkpart idbloader 64s 16383s
 parted -s "$IMGNAME" mkpart uboot 16384s 24575s
 parted -s "$IMGNAME" mkpart trust 24576s 32767s
+parted -s "$IMGNAME" mkpart placeholder6 5701009s 5701016s
+parted -s "$IMGNAME" mkpart placeholder7 5701017s 5701024s
+parted -s "$IMGNAME" mkpart vendor ext4 557056s 884735s
+parted -s "$IMGNAME" mkpart metadata ext4 884736s 917503s
+parted -s "$IMGNAME" mkpart misc 917504s 925695s
+parted -s "$IMGNAME" mkpart cache ext4 925696s 1081343s
+parted -s "$IMGNAME" rm 7
+parted -s "$IMGNAME" rm 6
 
 dd if=bootloader/idbloader.img of="$IMGNAME" conv=fsync,notrunc bs=512 seek=64
 dd if=bootloader/uboot.img of="$IMGNAME" conv=fsync,notrunc bs=512 seek=16384
@@ -89,6 +102,33 @@ $MKFS_FAT -F 32 -n BOOT "$BOOT_IMG"
 BOOT_TMP="$TMPDIR/BOOT_COPY"
 mkdir -p "$BOOT_TMP"
 cp -a BOOT/* "$BOOT_TMP"/ || true
+
+# First-stage ramdisk. This U-Boot only takes legacy uImage ramdisks, so it is
+# wrapped with mkimage. ramdisk.uimg has Magisk baked in; ramdisk-stock.uimg is
+# the plain one, rename it to ramdisk.uimg if Magisk ever breaks the boot.
+RAMDISK_SRC="$OUTDIR/ramdisk.img"
+if [ ! -f "$RAMDISK_SRC" ]; then
+    echo "Ramdisk not found at $RAMDISK_SRC (mka bootimage builds it)"
+    exit 1
+fi
+# u-boot-tools if installed, else the one the Lineage tree ships
+MKIMAGE=$(command -v mkimage || echo ../../../prebuilts/tools-lineage/linux-x86/bin/mkimage)
+if [ ! -x "$MKIMAGE" ]; then
+    echo "mkimage not found. Install u-boot-tools."
+    exit 1
+fi
+"$MKIMAGE" -A arm64 -O linux -T ramdisk -C none -n "andr36oid stock ramdisk" \
+    -d "$RAMDISK_SRC" "$BOOT_TMP/ramdisk-stock.uimg" >/dev/null
+MAGISK_APK=../common/magisk/Magisk.apk
+if [ -f "$MAGISK_APK" ] && [ "$(head -c 2 "$MAGISK_APK")" = "PK" ]; then
+    bash ../common/magisk/inject_magisk.sh --ramdisk "$RAMDISK_SRC" \
+        --apk "$MAGISK_APK" --out "$TMPDIR/ramdisk-magisk.cpio.gz"
+    "$MKIMAGE" -A arm64 -O linux -T ramdisk -C none -n "andr36oid ramdisk (Magisk)" \
+        -d "$TMPDIR/ramdisk-magisk.cpio.gz" "$BOOT_TMP/ramdisk.uimg" >/dev/null
+else
+    echo "No Magisk APK (or only an LFS pointer), the ramdisk has no root"
+    cp "$BOOT_TMP/ramdisk-stock.uimg" "$BOOT_TMP/ramdisk.uimg"
+fi
 # Boot logos with the build's version, the committed ones stay as a fallback
 VERSION=$(sed -n 's/^ro.andr36oid.version=//p' "$OUTDIR/system/product/build.prop" 2>/dev/null || true)
 if python3 -c 'import PIL' 2>/dev/null; then
@@ -159,10 +199,42 @@ else
     dd if="$SYS_SRC" of="$IMGNAME" bs=512 seek="$p2_start" conv=notrunc,fsync status=none
 fi
 
+echo "Copying vendor image into the vendor partition..."
+VENDOR_SRC="$OUTDIR/vendor.img"
+VENDOR_RAW="$TMPDIR/vendor.raw.img"
+if [ ! -f "$VENDOR_SRC" ]; then
+    echo "Vendor image not found at $VENDOR_SRC (mka vendorimage builds it)"
+    exit 1
+fi
+if file "$VENDOR_SRC" | grep -qi "Android sparse image"; then
+    simg2img "$VENDOR_SRC" "$VENDOR_RAW"
+else
+    cp "$VENDOR_SRC" "$VENDOR_RAW"
+fi
+if [ "$(stat -c %s "$VENDOR_RAW")" -gt $(((884735 - 557056 + 1) * 512)) ]; then
+    echo "vendor.img is larger than the vendor partition"
+    exit 1
+fi
+dd if="$VENDOR_RAW" of="$IMGNAME" bs=512 seek=557056 conv=notrunc,fsync status=none
+
+# metadata and cache get an empty ext4 here, so Magisk finds /metadata on the
+# very first boot. Android's own mke2fs, the host one may enable ext4 features
+# the 4.19 kernel does not know.
+HOSTBIN=${ANDROID_HOST_OUT:-../../../out/host/linux-x86}/bin
+mkfs_part() { # mkfs_part <label> <start sector> <end sector>
+    local img="$TMPDIR/$1.img"
+    truncate -s $((($3 - $2 + 1) * 512)) "$img"
+    MKE2FS_CONFIG="$HOSTBIN/mke2fs.conf" "$HOSTBIN/mke2fs" -q -t ext4 -F -b 4096 -L "$1" "$img"
+    dd if="$img" of="$IMGNAME" bs=512 seek="$2" conv=notrunc,fsync status=none
+    rm -f "$img"
+}
+mkfs_part metadata 884736 917503
+mkfs_part cache 925696 1081343
+
 sync
 parted -s "$IMGNAME" unit s print
 
 echo "Done, created $IMGNAME!"
-rm -rf "$BOOT_IMG" "$BOOT_TMP" "$SYS_RAW"
+rm -rf "$BOOT_IMG" "$BOOT_TMP" "$SYS_RAW" "$VENDOR_RAW"
 zip -r -q "$IMGNAME.zip" "$IMGNAME"
 echo "Packaged $IMGNAME.zip"

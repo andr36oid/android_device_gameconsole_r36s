@@ -37,7 +37,8 @@ cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dt
 
 echo "Creating image file $IMGNAME..."
 truncate -s "${IMGSIZE}G" "$IMGNAME"
-sync
+# Flush only the image: a bare sync waits for every filesystem on the build host
+sync "$IMGNAME"
 
 # The first-boot resizer (Image-resizing) runs "parted mkpart" for userdata and
 # EASYROMS after 5701009s, and parted gives them the lowest free numbers. So
@@ -66,7 +67,7 @@ dd if=bootloader/trust.img of="$IMGNAME" conv=fsync,notrunc bs=512 seek=24576
 
 echo "Partition table:"
 parted -s "$IMGNAME" unit s print
-sync
+sync "$IMGNAME"
 
 p1_start=$(parted -s "$IMGNAME" unit s print | awk '/^ *1[[:space:]]/{gsub(/s/,"",$2); print $2}')
 p1_end=$(parted -s "$IMGNAME" unit s print | awk '/^ *1[[:space:]]/{gsub(/s/,"",$3); print $3}')
@@ -231,7 +232,7 @@ mkfs_part() { # mkfs_part <label> <start sector> <end sector>
 mkfs_part metadata 884736 917503
 mkfs_part cache 925696 1081343
 
-sync
+sync "$IMGNAME"
 parted -s "$IMGNAME" unit s print
 
 echo "Done, created $IMGNAME!"

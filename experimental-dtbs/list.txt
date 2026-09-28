@@ -1,0 +1,24 @@
+# Experimental clone DTBs: kernel DTB name (rk3326-r36s-clone-<name>.dtb) and
+# the folder under BOOT/Experimental/ it goes to. mkimg.sh reads this file.
+v22                     R36S-V22
+v21                     R36S-V21
+v21-usbhost             R36S-V21-2551-2552
+y02                     R36S-Y02-Y07
+v30                     R36S-V30
+v30-2603                R36S-V30-2603
+panel3-alt              R36S-Panel3-Alt
+g80-panel8              EE-G80-Panel8
+g80-panel9              EE-G80-Panel9
+k36-panel1              EE-K36-Panel1
+k36-panel4              EE-K36-Panel4
+v12-var2                EE-V12-Var2
+v12-var3-panel3         EE-V12-Var3-Panel3
+v12-var3-panela         EE-V12-Var3-PanelA
+r36ultra                R36-Ultra
+soysauce-panel5         Soy-Panel5
+soysauce-panel5-253x    Soy-Panel5-253x
+soysauce-panel6         Soy-Panel6
+soysauce-panel7         Soy-Panel7
+soysauce-panel7-253x    Soy-Panel7-253x
+soysauce-v04-panel2     Soy-V04-Panel2
+soysauce-v05-2601       Soy-V05-2601

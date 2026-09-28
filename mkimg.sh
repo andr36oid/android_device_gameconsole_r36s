@@ -34,6 +34,11 @@ cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dt
 cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel5.dtb" BOOT/Panels/Panel5/rk3326-r36s-android.dtb || true
 cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel6.dtb" BOOT/Panels/Panel6/rk3326-r36s-android.dtb || true
 cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dtb" BOOT/rk3326-r36s-android.dtb || true
+# Experimental clone DTBs, one folder per board, see BOOT/Experimental/README.txt
+grep -v '^#' experimental-dtbs/list.txt | while read -r name folder; do
+    [ -n "$name" ] || continue
+    cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-r36s-clone-$name.dtb" "BOOT/Experimental/$folder/rk3326-r36s-android.dtb" || true
+done
 
 echo "Creating image file $IMGNAME..."
 truncate -s "${IMGSIZE}G" "$IMGNAME"
@@ -143,6 +148,8 @@ fi
 # screen stays on the logo until Android draws instead of going blank
 cp "$BOOT_TMP/logo.bmp" "$BOOT_TMP/logo_kernel.bmp"
 cp "$BOOT_TMP/Panels/Plus/logo.bmp" "$BOOT_TMP/Panels/Plus/logo_kernel.bmp"
+# The R36 Ultra has a 720x720 screen too
+cp "$BOOT_TMP/Panels/Plus/logo.bmp" "$BOOT_TMP/Panels/Plus/logo_kernel.bmp" "$BOOT_TMP/Experimental/R36-Ultra/"
 # The generator isn't needed on the card
 rm -rf "$BOOT_TMP/gen-logo.py" "$BOOT_TMP/fonts"
 if [ -f "$BOOT_TMP/uboot-dtb" ]; then

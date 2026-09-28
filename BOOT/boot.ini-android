@@ -7,7 +7,10 @@ odroidgoa-uboot-config
 
 setenv bootrootfs "fw_devlink=permissive rootwait consoleblank=0 swiotlb=1 coherent_pool=1m"
 
-setenv console "console=ttyS2,115200n8 androidboot.console=ttyS2 vt.global_cursor_default=0"
+# Only errors go out on the serial port: at 115200 baud every kernel line costs
+# about 6ms and the kernel waits for it, the full log is still in dmesg (with
+# timestamps). For the full log on serial, change loglevel=4 to loglevel=8.
+setenv console "console=ttyS2,115200n8 loglevel=4 printk.time=1 androidboot.console=ttyS2 vt.global_cursor_default=0"
 
 setenv android "firmware_class.path=/vendor/firmware androidboot.hardware=rk30board androidboot.selinux=permissive androidboot.verifiedbootstate=green"
 

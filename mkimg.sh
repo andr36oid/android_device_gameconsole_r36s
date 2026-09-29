@@ -9,8 +9,21 @@ IMGNAME=$LINEAGEVERSION-$DATE-$TIME-$DEVICE.img
 IMGSIZE=3    # GiB
 OUTDIR=${ANDROID_PRODUCT_OUT:="../../../out/target/product/r36s"}
 TMPDIR=$(mktemp -d)
-cleanup() { rm -rf "$TMPDIR"; }
+# A build that stops (error, Ctrl-C, kill) leaves no half-made 3 GB image behind.
+# Only the one this run made, and never once it is finished. Full path: the
+# script changes into other folders later.
+IMGPATH=$PWD/$IMGNAME
+IMG_STARTED=0
+IMG_DONE=0
+cleanup() {
+    rm -rf "$TMPDIR"
+    if [ "$IMG_STARTED" = 1 ] && [ "$IMG_DONE" = 0 ]; then
+        rm -f "$IMGPATH"
+    fi
+}
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 if [ "$(id -u)" != 0 ]; then
     echo "Must be root to run script!"
@@ -53,6 +66,7 @@ grep -v '^#' experimental-dtbs/list.txt | while read -r name folder _; do
 done
 
 echo "Creating image file $IMGNAME..."
+IMG_STARTED=1
 truncate -s "${IMGSIZE}G" "$IMGNAME"
 # Flush only the image: a bare sync waits for every filesystem on the build host
 sync "$IMGNAME"
@@ -259,6 +273,7 @@ mkfs_part cache 925696 1081343
 sync "$IMGNAME"
 parted -s "$IMGNAME" unit s print
 
+IMG_DONE=1
 echo "Done, created $IMGNAME!"
 rm -rf "$BOOT_IMG" "$BOOT_TMP" "$SYS_RAW" "$VENDOR_RAW"
 zip -r -q "$IMGNAME.zip" "$IMGNAME"

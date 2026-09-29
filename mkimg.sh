@@ -22,23 +22,34 @@ if [ -f "$IMGNAME" ]; then
     exit 1
 fi
 
+# Any file that doesn't make it onto BOOT stops the build: an image without Image,
+# ramdisk.uimg or a DTB boots nowhere, and nobody would notice before a user does.
+die() {
+    echo "mkimg: $*" >&2
+    exit 1
+}
+need_cp() { # need_cp <from> <to>
+    cp "$1" "$2" || die "could not copy $1 to $2"
+}
+
 echo "Copying over kernel files"
-cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/Image" BOOT/ || true
-cp ../common/resizing/prebuilt/Image-resizing BOOT/ || true
-cp ./Image-recovery BOOT/ || true
-cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel0.dtb" BOOT/Panels/Panel0/rk3326-r36s-android.dtb || true
-cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel1.dtb" BOOT/Panels/Panel1/rk3326-r36s-android.dtb || true
-cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel2.dtb" BOOT/Panels/Panel2/rk3326-r36s-android.dtb || true
-cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel3.dtb" BOOT/Panels/Panel3/rk3326-r36s-android.dtb || true
-cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dtb" BOOT/Panels/Panel4/rk3326-r36s-android.dtb || true
-cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel5.dtb" BOOT/Panels/Panel5/rk3326-r36s-android.dtb || true
-cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel6.dtb" BOOT/Panels/Panel6/rk3326-r36s-android.dtb || true
-cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dtb" BOOT/rk3326-r36s-android.dtb || true
-cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-r36splus-android.dtb" BOOT/Panels/R36S-Plus/rk3326-r36s-android.dtb || true
+need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/Image" BOOT/
+need_cp ../common/resizing/prebuilt/Image-resizing BOOT/
+need_cp ./Image-recovery BOOT/
+need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel0.dtb" BOOT/Panels/Panel0/rk3326-r36s-android.dtb
+need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel1.dtb" BOOT/Panels/Panel1/rk3326-r36s-android.dtb
+need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel2.dtb" BOOT/Panels/Panel2/rk3326-r36s-android.dtb
+need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel3.dtb" BOOT/Panels/Panel3/rk3326-r36s-android.dtb
+need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dtb" BOOT/Panels/Panel4/rk3326-r36s-android.dtb
+need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel5.dtb" BOOT/Panels/Panel5/rk3326-r36s-android.dtb
+need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel6.dtb" BOOT/Panels/Panel6/rk3326-r36s-android.dtb
+need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel4.dtb" BOOT/rk3326-r36s-android.dtb
+need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-r36splus-android.dtb" BOOT/Panels/R36S-Plus/rk3326-r36s-android.dtb
 # Experimental clone DTBs, one folder per board, see BOOT/Experimental/README.txt
+# (a failed copy inside the loop ends the pipeline with an error: set -e + pipefail)
 grep -v '^#' experimental-dtbs/list.txt | while read -r name folder _; do
     [ -n "$name" ] || continue
-    cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-r36s-clone-$name.dtb" "BOOT/Experimental/$folder/rk3326-r36s-android.dtb" || true
+    need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-r36s-clone-$name.dtb" "BOOT/Experimental/$folder/rk3326-r36s-android.dtb"
 done
 
 echo "Creating image file $IMGNAME..."
@@ -108,7 +119,7 @@ $MKFS_FAT -F 32 -n BOOT "$BOOT_IMG"
 
 BOOT_TMP="$TMPDIR/BOOT_COPY"
 mkdir -p "$BOOT_TMP"
-cp -a BOOT/* "$BOOT_TMP"/ || true
+cp -a BOOT/* "$BOOT_TMP"/ || die "could not copy BOOT/ to $BOOT_TMP"
 
 # First-stage ramdisk. This U-Boot only takes legacy uImage ramdisks, so it is
 # wrapped with mkimage. ramdisk.uimg has Magisk baked in; ramdisk-stock.uimg is
@@ -166,26 +177,28 @@ if ! command -v mcopy >/dev/null 2>&1; then
 fi
 export MTOOLS_SKIP_CHECK=1
 
-# copy files one-by-one to avoid trying to create '.' or '..' entries
+# copy files one-by-one to avoid trying to create '.' or '..' entries. Any mcopy
+# failure (usually: BOOT is full) stops the build.
 cd "$BOOT_TMP"
 shopt -s dotglob nullglob
 for f in * .*; do
     [ "$f" = "." ] && continue
     [ "$f" = ".." ] && continue
     # if it's a directory, mcopy -s will copy recursively
-    mcopy -s -i "$BOOT_IMG" "$f" ::/ || {
-        # fallback: create directory then copy contents
-        if [ -d "$f" ]; then
-            mmd -i "$BOOT_IMG" ::/"$f" || true
-            (cd "$f" && for sub in * .*; do
-                [ "$sub" = "." ] && continue
-                [ "$sub" = ".." ] && continue
-                mcopy -s -i "$BOOT_IMG" "$f/$sub" ::/"$f"/ || true
-            done)
-        fi
-    }
+    mcopy -s -i "$BOOT_IMG" "$f" ::/ || die "could not copy $f to BOOT (full? $(du -sh --apparent-size "$BOOT_TMP" | cut -f1) to copy)"
 done
 cd - >/dev/null
+
+# Check: every file is on BOOT, and the ones a start needs are byte for byte
+want=$(cd "$BOOT_TMP" && find . -type f | wc -l)
+have=$(mdir -/ -b -i "$BOOT_IMG" ::/ | grep -vc '/$' || true)
+[ "$want" = "$have" ] || die "BOOT has $have files, expected $want"
+for f in Image ramdisk.uimg ramdisk-stock.uimg boot.ini boot.ini-android rk3326-r36s-android.dtb \
+    Image-resizing Image-recovery; do
+    [ -f "$BOOT_TMP/$f" ] || die "$f is missing from the BOOT files"
+    mtype -i "$BOOT_IMG" "::/$f" | cmp -s - "$BOOT_TMP/$f" || die "$f on BOOT differs from the build's"
+done
+echo "BOOT: $have files checked, $(mdir -i "$BOOT_IMG" ::/ | sed -n 's/^ *\([0-9 ]*\) bytes free.*/\1/p' | tr -d ' ') bytes free"
 
 echo "Embedding BOOT filesystem into $IMGNAME at sector $p1_start..."
 dd if="$BOOT_IMG" of="$IMGNAME" bs=512 seek="$p1_start" conv=notrunc,fsync status=none

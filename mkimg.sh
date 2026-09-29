@@ -159,6 +159,14 @@ rm -rf "$BOOT_TMP/gen-logo.py" "$BOOT_TMP/fonts"
 if [ -f "$BOOT_TMP/uboot-dtb" ]; then
     mv "$BOOT_TMP/uboot-dtb" "$BOOT_TMP/rg351mp-kernel.dtb"
 fi
+# U-Boot picks rg351p-, rg351v- or rg351mp-kernel.dtb by the board's hardware
+# revision ADC, and many clones read as rg351v or rg351p. Ship the same file
+# under all three names at the top and in every screen folder.
+for d in "$BOOT_TMP" "$BOOT_TMP"/Panels/* "$BOOT_TMP"/Experimental/*; do
+    [ -f "$d/rg351mp-kernel.dtb" ] || continue
+    cp "$d/rg351mp-kernel.dtb" "$d/rg351v-kernel.dtb"
+    cp "$d/rg351mp-kernel.dtb" "$d/rg351p-kernel.dtb"
+done
 
 if ! command -v mcopy >/dev/null 2>&1; then
     echo "mtools (mcopy) not found. Install mtools."

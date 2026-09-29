@@ -154,8 +154,19 @@ grep -v '^#' experimental-dtbs/list.txt | while read -r name folder size; do
     [ "$size" = 720x720 ] || continue
     cp "$BOOT_TMP/Panels/R36S-Plus/logo.bmp" "$BOOT_TMP/Panels/R36S-Plus/logo_kernel.bmp" "$BOOT_TMP/Experimental/$folder/"
 done
-# The generator isn't needed on the card
-rm -rf "$BOOT_TMP/gen-logo.py" "$BOOT_TMP/fonts"
+# Charge screen: U-Boot shows battery_*.bmp from the root while the console is
+# off and plugged in. They must match the screen width, so the 720x720 folders
+# get their own set. Without Pillow the screen stays black as before.
+if python3 -c 'import PIL' 2>/dev/null; then
+    python3 BOOT/gen-charge.py -o "$BOOT_TMP"
+    python3 BOOT/gen-charge.py -w 720 -H 720 -o "$BOOT_TMP/Panels/R36S-Plus"
+    grep -v '^#' experimental-dtbs/list.txt | while read -r name folder size; do
+        [ "$size" = 720x720 ] || continue
+        cp "$BOOT_TMP"/Panels/R36S-Plus/battery_*.bmp "$BOOT_TMP/Experimental/$folder/"
+    done
+fi
+# The generators aren't needed on the card
+rm -rf "$BOOT_TMP/gen-logo.py" "$BOOT_TMP/gen-charge.py" "$BOOT_TMP/fonts"
 if [ -f "$BOOT_TMP/uboot-dtb" ]; then
     mv "$BOOT_TMP/uboot-dtb" "$BOOT_TMP/rg351mp-kernel.dtb"
 fi

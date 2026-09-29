@@ -26,8 +26,28 @@ setenv fdt_high "0xffffffffffffffff"
 
 load mmc 1:1 ${fdt_addr_r} rk3326-r36s-android.dtb
 
-# If FN pressed
-if gpio input c4
+# Recovery: FN held at power-on, or a file recovery.txt on BOOT.
+# FN is on a different pin per board family, and hwrev (the board ID resistor
+# U-Boot reads) tells the family. "gpio input" is true when the pin reads low,
+# which is FN held. U-Boot itself turns on the pull-ups of c4 and d10.
+#   rg351mp: R36S and the clones wired like it, FN = GPIO2_A4 (c4)
+#   rg351v:  EE clones (K36, G80, V12, R36 Max, ...), FN = GPIO3_B2 (d10)
+#   others (Soy Sauce, unknown boards): no FN check. The Soy FN pin differs
+#   between boards and has no pull-up here, so it could read "held" at every start.
+setenv go_recovery no
+if test "${hwrev}" = "rg351mp"; then
+    if gpio input c4; then setenv go_recovery yes; fi
+fi
+if test "${hwrev}" = "rg351v"; then
+    if gpio input d10; then setenv go_recovery yes; fi
+fi
+# recovery.txt works on every board. U-Boot can't delete files, so every start
+# goes into recovery until it is deleted on a PC. recovery.txt.txt is what
+# Windows makes when it hides file extensions.
+if test -e mmc 1:1 recovery.txt; then setenv go_recovery yes; fi
+if test -e mmc 1:1 recovery.txt.txt; then setenv go_recovery yes; fi
+
+if test "${go_recovery}" = "yes"
 then
     # The recovery kernel carries its own ramdisk
     load mmc 1:1 ${kernel_addr_r} Image-recovery

@@ -190,6 +190,17 @@ fi
 # screen stays on the logo until Android draws instead of going blank
 cp "$BOOT_TMP/logo.bmp" "$BOOT_TMP/logo_kernel.bmp"
 cp "$BOOT_TMP/Panels/R36S-Plus/logo.bmp" "$BOOT_TMP/Panels/R36S-Plus/logo_kernel.bmp"
+# English resizer screens (640x480 and 720x720),
+# loaded by the first-boot boot.ini as an extra ramdisk for Image-resizing.
+# Without Pillow the resizer shows its own English screens as before.
+if python3 -c 'import PIL' 2>/dev/null; then
+    for size in 640x480 720x720; do
+        python3 resize-screens/gen-resize-screens.py -w "${size%x*}" -H "${size#*x}" \
+            -o "$TMPDIR/resize-screens.cpio.gz"
+        "$MKIMAGE" -A arm64 -O linux -T ramdisk -C none -n "andr36oid resizer screens" \
+            -d "$TMPDIR/resize-screens.cpio.gz" "$BOOT_TMP/resize-screens-${size%x*}.uimg" >/dev/null
+    done
+fi
 # The experimental boards with a 720x720 screen get the same logo
 grep -v '^#' experimental-dtbs/list.txt | while read -r name folder size; do
     [ "$size" = 720x720 ] || continue

@@ -149,7 +149,7 @@ fi
 # screen stays on the logo until Android draws instead of going blank
 cp "$BOOT_TMP/logo.bmp" "$BOOT_TMP/logo_kernel.bmp"
 cp "$BOOT_TMP/Panels/R36S-Plus/logo.bmp" "$BOOT_TMP/Panels/R36S-Plus/logo_kernel.bmp"
-# Resizer screens in English, Spanish and Portuguese (640x480 and 720x720),
+# English resizer screens (640x480 and 720x720),
 # loaded by the first-boot boot.ini as an extra ramdisk for Image-resizing.
 # Without Pillow the resizer shows its own English screens as before.
 if python3 -c 'import PIL' 2>/dev/null; then

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Screens for the first-boot resizer, in English, Spanish and Portuguese.
+"""Screens for the first-boot resizer, in English.
 
 Usage: gen-resize-screens.py [-w W] [-H H] -o out.cpio.gz [--png-dir DIR]
 
@@ -11,7 +11,7 @@ them into a small gzip cpio with those two names. BOOT/boot.ini hands it to
 Image-resizing as an extra ramdisk, and the kernel unpacks it over the built-in
 one, so the resizer shows these files instead. Image-resizing isn't rebuilt.
 
-The console can't know the language yet, so the three languages are stacked.
+The console doesn't know the user's language yet, so the text is English only.
 Requires Pillow. Fonts: BOOT/fonts (the ones gen-logo.py uses).
 """
 import argparse
@@ -30,17 +30,13 @@ GREY = (170, 170, 170)
 RED = (0xE0, 0x40, 0x40)
 GREEN = (0x3D, 0xDC, 0x84)
 
-# (title, detail) per language: English, Spanish, Portuguese (Brazil)
+# (title, detail) blocks per screen
 SCREENS = {
     "resizing_480.ppm": [
         ("Preparing the SD card", "1-2 minutes. Don't turn the console off."),
-        ("Preparando la tarjeta SD", "1-2 minutos. No apagues la consola."),
-        ("Preparando o cartão SD", "1-2 minutos. Não desligue o console."),
     ],
     "resized_480.ppm": [
         ("SD card ready, restarting", "The first start takes a few more minutes."),
-        ("Tarjeta SD lista, reiniciando", "El primer inicio tarda unos minutos más."),
-        ("Cartão SD pronto, reiniciando", "A primeira inicialização leva mais alguns minutos."),
     ],
 }
 
@@ -86,8 +82,10 @@ def render(W, H, lines, ready, ss=4):
     margin = 0.07 * u
     avail = w - 2 * margin
 
-    # sizes relative to the short side, shrunk together if a line is too wide
-    k = 1.0
+    # sizes relative to the short side, larger for a single block, shrunk together if
+    # a line is too wide
+    n = len(lines)
+    k = 1.3 if n == 1 else 1.0
     while True:
         f_t = font("Roboto-Medium.ttf", 0.060 * u * k)
         f_d = font("Roboto-Regular.ttf", 0.044 * u * k)
@@ -109,13 +107,13 @@ def render(W, H, lines, ready, ss=4):
     else:
         power_icon(d, w / 2 + icon_h * 0.75, icon_y + icon_h * 0.05, icon_h * 0.36, WHITE, True)
 
-    # three blocks, spread over the space under the icons
+    # the blocks, spread over the space under the icons
     top = margin + icon_h + 0.06 * u
     bottom = h - margin
     block_h = cap_h(f_t) + 0.030 * u * k + cap_h(f_d) + 0.02 * u * k
-    gap = (bottom - top - 3 * block_h) / 2
+    gap = (bottom - top - n * block_h) / max(1, n - 1)
     gap = max(0.03 * u, min(gap, 0.09 * u))
-    total = 3 * block_h + 2 * gap
+    total = n * block_h + (n - 1) * gap
     y = top + (bottom - top - total) / 2
     for title, detail in lines:
         yb = y + cap_h(f_t)

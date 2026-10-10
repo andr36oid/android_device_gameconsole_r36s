@@ -11,14 +11,17 @@ put the SD card in a computer to undo it.
 Each folder holds one board:
   rk3326-r36s-android.dtb   the device tree Android boots with
   rg351mp-kernel.dtb        the panel setup U-Boot uses for the boot logo
-  rg351v-kernel.dtb         and the charge screen, three copies of the same
-  rg351p-kernel.dtb         file (U-Boot picks the name by board revision)
+  rg351v-kernel.dtb         and the charge screen, six copies of the same
+  rg351p-kernel.dtb         file (U-Boot picks the name by board revision,
+  rg351mp-uboot.dtb         older U-Boots read the -kernel names, the
+  rg351v-uboot.dtb          andr36oid U-Boot the -uboot names)
+  rg351p-uboot.dtb
   logo.bmp, logo_kernel.bmp only in the folders of 720x720 consoles
 
 How to use one
 --------------
 1. Put the SD card in a computer and open the BOOT partition.
-2. Back up rk3326-r36s-android.dtb, the three rg351*-kernel.dtb files,
+2. Back up rk3326-r36s-android.dtb, the six rg351*.dtb files,
    logo.bmp and logo_kernel.bmp from the top of the partition (for
    example into a folder called Backup).
 3. Copy all files from the folder that matches your console to the top

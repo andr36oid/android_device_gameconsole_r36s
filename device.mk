@@ -27,8 +27,9 @@
 #PRODUCT_COPY_FILES += \
 #    device/gameconsole/r36s/ramdisk/init.resize_userdata.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/init.resize_userdata.rc
 
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
-    ro.surface_flinger.primary_display_orientation=ORIENTATION_0 \
+# The display orientation and density come from the boot script of the console's
+# BOOT profile (androidboot.sf_orientation / androidboot.lcd_density), see
+# init.rk30board.rc in common, so one image runs on every console.
 
 # Device specific overlays
 DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay

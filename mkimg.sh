@@ -135,6 +135,22 @@ BOOT_TMP="$TMPDIR/BOOT_COPY"
 mkdir -p "$BOOT_TMP"
 cp -a BOOT/* "$BOOT_TMP"/ || die "could not copy BOOT/ to $BOOT_TMP"
 
+# Other consoles on the same image (BOOT/Devices): the flasher copies the chosen
+# folder's files to the BOOT root under the fixed names every U-Boot looks for.
+# Consoles whose screen needs other settings get their own Android boot script,
+# made from the main one so the two never drift apart; init.rk30board.rc turns the
+# androidboot values into the display properties.
+device_profile() {  # <folder> <dtb name> <extra kernel arguments>
+    cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/$2" "$BOOT_TMP/Devices/$1/rk3326-r36s-android.dtb"
+    cp "$BOOT_TMP/Devices/$1/logo.bmp" "$BOOT_TMP/Devices/$1/logo_kernel.bmp"
+    sed "s|^setenv android2 \"|setenv android2 \"$3 |" BOOT/boot.ini-android > "$BOOT_TMP/Devices/$1/boot.ini-android"
+    grep -q "^setenv android2 \"$3 " "$BOOT_TMP/Devices/$1/boot.ini-android"
+}
+# R46H: 1024x768 at 304 dpi
+device_profile R46H rk3326-r46h-android.dtb "androidboot.lcd_density=304"
+# R50S: the 480x854 panel is mounted sideways
+device_profile R50S rk3326-r50s-android.dtb "androidboot.sf_orientation=ORIENTATION_270 fbcon=rotate:3"
+
 # First-stage ramdisk. This U-Boot only takes legacy uImage ramdisks, so it is
 # wrapped with mkimage. ramdisk.uimg has Magisk baked in; ramdisk-stock.uimg is
 # the plain one, rename it to ramdisk.uimg if Magisk ever breaks the boot.

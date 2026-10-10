@@ -4,13 +4,16 @@ SCREEN (PANEL) FILES
 Each folder here holds the files for one screen:
   rk3326-r36s-android.dtb   the device tree Android boots with
   rg351mp-kernel.dtb        the panel setup U-Boot uses for the boot logo
-  rg351v-kernel.dtb         and the charge screen, three copies of the same
-  rg351p-kernel.dtb         file (U-Boot picks the name by board revision)
+  rg351v-kernel.dtb         and the charge screen, six copies of the same
+  rg351p-kernel.dtb         file (U-Boot picks the name by board revision,
+  rg351mp-uboot.dtb         older U-Boots read the -kernel names, the
+  rg351v-uboot.dtb          andr36oid U-Boot the -uboot names)
+  rg351p-uboot.dtb
 R36S-Plus also has logo.bmp and logo_kernel.bmp (the 720x720 boot logo)
 and battery_*.bmp (the 720x720 charge screen).
 
 The top of this partition holds a copy of Panel4. To switch, put the SD
-card in a computer, back up rk3326-r36s-android.dtb and the three rg351*-kernel.dtb
+card in a computer, back up rk3326-r36s-android.dtb and the six rg351*.dtb
 files from the top of the partition, and copy all files from one folder
 here over them (for R36S-Plus also copy logo.bmp, logo_kernel.bmp and the
 battery_*.bmp files).

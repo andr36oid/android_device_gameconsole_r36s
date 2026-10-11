@@ -184,10 +184,8 @@ if python3 -c 'import PIL' 2>/dev/null; then
     python3 BOOT/gen-logo.py --build "$VERSION" -o "$BOOT_TMP/logo.bmp"
     python3 BOOT/gen-logo.py --build "$VERSION" -w 720 -H 720 -o "$BOOT_TMP/Panels/R36S-Plus/logo.bmp"
     python3 BOOT/gen-logo.py --build "$VERSION" -w 1024 -H 768 -o "$BOOT_TMP/Devices/R46H/logo.bmp"
-    # the R50S panel is 480x854 mounted sideways: draw it landscape, store it turned
-    python3 BOOT/gen-logo.py --build "$VERSION" -w 854 -H 480 -o "$TMPDIR/r50s-logo.bmp"
-    python3 -c 'import sys; from PIL import Image; Image.open(sys.argv[1]).rotate(90, expand=True).save(sys.argv[2])' \
-        "$TMPDIR/r50s-logo.bmp" "$BOOT_TMP/Devices/R50S/logo.bmp"
+    # the R50S panel is 480x854 mounted sideways: drawn landscape, stored turned
+    python3 BOOT/gen-logo.py --build "$VERSION" -w 854 -H 480 --turn -o "$BOOT_TMP/Devices/R50S/logo.bmp"
 else
     echo "Pillow not found, keeping the committed boot logos"
 fi
@@ -198,12 +196,14 @@ cp "$BOOT_TMP/Panels/R36S-Plus/logo.bmp" "$BOOT_TMP/Panels/R36S-Plus/logo_kernel
 for d in "$BOOT_TMP"/Devices/*; do
     if [ -f "$d/logo.bmp" ]; then cp "$d/logo.bmp" "$d/logo_kernel.bmp"; fi
 done
-# English resizer screens (640x480 and 720x720),
-# loaded by the first-boot boot.ini as an extra ramdisk for Image-resizing.
-# Without Pillow the resizer shows its own English screens as before.
+# English resizer screens (640x480, 720x720, 1024x768 for the R46H and the R50S's
+# sideways 854x480), loaded by the first-boot boot.ini as an extra ramdisk for
+# Image-resizing. Without Pillow the resizer shows its own English screens as before.
 if python3 -c 'import PIL' 2>/dev/null; then
-    for size in 640x480 720x720; do
-        python3 resize-screens/gen-resize-screens.py -w "${size%x*}" -H "${size#*x}" \
+    for size in 640x480 720x720 1024x768 854x480; do
+        turn=
+        [ "$size" = 854x480 ] && turn=--turn
+        python3 resize-screens/gen-resize-screens.py -w "${size%x*}" -H "${size#*x}" $turn \
             -o "$TMPDIR/resize-screens.cpio.gz"
         "$MKIMAGE" -A arm64 -O linux -T ramdisk -C none -n "andr36oid resizer screens" \
             -d "$TMPDIR/resize-screens.cpio.gz" "$BOOT_TMP/resize-screens-${size%x*}.uimg" >/dev/null
@@ -216,10 +216,12 @@ grep -v '^#' experimental-dtbs/list.txt | while read -r name folder size; do
 done
 # Charge screen: U-Boot shows battery_*.bmp from the root while the console is
 # off and plugged in. They must match the screen width, so the 720x720 folders
-# get their own set. Without Pillow the screen stays black as before.
+# and the other consoles get their own set. Without Pillow the screen stays black as before.
 if python3 -c 'import PIL' 2>/dev/null; then
     python3 BOOT/gen-charge.py -o "$BOOT_TMP"
     python3 BOOT/gen-charge.py -w 720 -H 720 -o "$BOOT_TMP/Panels/R36S-Plus"
+    python3 BOOT/gen-charge.py -w 1024 -H 768 -o "$BOOT_TMP/Devices/R46H"
+    python3 BOOT/gen-charge.py -w 854 -H 480 --turn -o "$BOOT_TMP/Devices/R50S"
     grep -v '^#' experimental-dtbs/list.txt | while read -r name folder size; do
         [ "$size" = 720x720 ] || continue
         cp "$BOOT_TMP"/Panels/R36S-Plus/battery_*.bmp "$BOOT_TMP/Experimental/$folder/"

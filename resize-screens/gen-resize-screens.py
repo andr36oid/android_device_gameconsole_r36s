@@ -154,11 +154,15 @@ def main():
     p.add_argument("-H", "--height", type=int, default=480)
     p.add_argument("-o", "--out", required=True, help="gzip cpio to write")
     p.add_argument("--png-dir", help="also write PNG previews here")
+    p.add_argument("--turn", action="store_true",
+                   help="panel mounted sideways: draw W x H, store it turned a quarter anticlockwise")
     a = p.parse_args()
 
     files = []
     for name, lines in SCREENS.items():
         im = render(a.width, a.height, lines, ready=name.startswith("resized"))
+        if a.turn:
+            im = im.rotate(90, expand=True)
         files.append((name, ppm(im)))
         if a.png_dir:
             os.makedirs(a.png_dir, exist_ok=True)

@@ -41,8 +41,8 @@ def font(name, px):
 
 def render(W, H, filled, fail, ss=4):
     w, h = W * ss, H * ss
-    # 720x720: U-Boot's voltage/current lines sit at 688-720, keep them clear
-    usable_h = h - 48 * ss if H >= 720 else h
+    # 720 rows and more: U-Boot's voltage/current lines sit at 688-720, keep them clear
+    usable_h = min(h - 48 * ss, 672 * ss) if H >= 720 else h
     u = min(w, usable_h)
     im = Image.new("RGB", (w, h), BLACK)
     d = ImageDraw.Draw(im)
@@ -99,6 +99,8 @@ def main():
     p.add_argument("-H", "--height", type=int, default=480)
     p.add_argument("-o", "--outdir", default=".")
     p.add_argument("--png", action="store_true", help="also write .png previews")
+    p.add_argument("--turn", action="store_true",
+                   help="panel mounted sideways: draw W x H, store it turned a quarter anticlockwise")
     a = p.parse_args()
 
     os.makedirs(a.outdir, exist_ok=True)
@@ -106,6 +108,8 @@ def main():
     frames.append(("battery_fail", 0, True))
     for name, filled, fail in frames:
         im = render(a.width, a.height, filled, fail)
+        if a.turn:
+            im = im.rotate(90, expand=True)
         im.save(os.path.join(a.outdir, name + ".bmp"), "BMP")
         if a.png:
             im.save(os.path.join(a.outdir, name + ".png"), "PNG")

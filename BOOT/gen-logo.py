@@ -214,9 +214,13 @@ def main():
     p.add_argument("--build", default="", help="build number, ISO date e.g. 2026-09-10 (omit to hide)")
     p.add_argument("--credits", default="with <3 from snaccy - kenny - kauan",
                    help='"<prefix> from a - b - c"; names go bold, hyphens become middle dots, <3 becomes a heart ("" to hide)')
+    p.add_argument("--turn", action="store_true",
+                   help="panel mounted sideways: draw W x H, store it turned a quarter anticlockwise")
     a = p.parse_args()
 
     im = render(a.width, a.height, a.title, a.subtitle, a.build, a.credits)
+    if a.turn:
+        im = im.rotate(90, expand=True)
     im.save(a.out, "BMP")
     if a.png:
         im.save(a.png, "PNG")

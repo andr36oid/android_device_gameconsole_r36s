@@ -233,6 +233,16 @@ for d in "$BOOT_TMP" "$BOOT_TMP"/Panels/* "$BOOT_TMP"/Experimental/*; do
         cp "$d/rg351mp-kernel.dtb" "$d/$name.dtb"
     done
 done
+# The other consoles' folders (BOOT/Devices) bring their U-Boot file under one
+# name. Ship it under all six too: U-Boot asks for the name of whatever board id it
+# reads, and with only one name it would load the R36S file from the top of BOOT.
+for d in "$BOOT_TMP"/Devices/*; do
+    src=$(find "$d" -maxdepth 1 -name 'rg351*-uboot.dtb' | head -n 1)
+    [ -n "$src" ] || continue
+    for name in rg351mp-kernel rg351v-kernel rg351p-kernel rg351mp-uboot rg351v-uboot rg351p-uboot; do
+        [ "$d/$name.dtb" = "$src" ] || cp "$src" "$d/$name.dtb"
+    done
+done
 
 if ! command -v mcopy >/dev/null 2>&1; then
     echo "mtools (mcopy) not found. Install mtools."

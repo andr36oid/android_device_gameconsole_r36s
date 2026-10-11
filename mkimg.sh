@@ -183,6 +183,11 @@ if python3 -c 'import PIL' 2>/dev/null; then
     echo "Drawing boot logos for ${VERSION:-an unknown version}"
     python3 BOOT/gen-logo.py --build "$VERSION" -o "$BOOT_TMP/logo.bmp"
     python3 BOOT/gen-logo.py --build "$VERSION" -w 720 -H 720 -o "$BOOT_TMP/Panels/R36S-Plus/logo.bmp"
+    python3 BOOT/gen-logo.py --build "$VERSION" -w 1024 -H 768 -o "$BOOT_TMP/Devices/R46H/logo.bmp"
+    # the R50S panel is 480x854 mounted sideways: draw it landscape, store it turned
+    python3 BOOT/gen-logo.py --build "$VERSION" -w 854 -H 480 -o "$TMPDIR/r50s-logo.bmp"
+    python3 -c 'import sys; from PIL import Image; Image.open(sys.argv[1]).rotate(90, expand=True).save(sys.argv[2])' \
+        "$TMPDIR/r50s-logo.bmp" "$BOOT_TMP/Devices/R50S/logo.bmp"
 else
     echo "Pillow not found, keeping the committed boot logos"
 fi
@@ -190,6 +195,9 @@ fi
 # screen stays on the logo until Android draws instead of going blank
 cp "$BOOT_TMP/logo.bmp" "$BOOT_TMP/logo_kernel.bmp"
 cp "$BOOT_TMP/Panels/R36S-Plus/logo.bmp" "$BOOT_TMP/Panels/R36S-Plus/logo_kernel.bmp"
+for d in "$BOOT_TMP"/Devices/*; do
+    if [ -f "$d/logo.bmp" ]; then cp "$d/logo.bmp" "$d/logo_kernel.bmp"; fi
+done
 # English resizer screens (640x480 and 720x720),
 # loaded by the first-boot boot.ini as an extra ramdisk for Image-resizing.
 # Without Pillow the resizer shows its own English screens as before.

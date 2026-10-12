@@ -8,6 +8,15 @@ voltage on a rail. Only try one if the normal files (the top of this
 partition and ../Panels) do not work on your console, and only if you can
 put the SD card in a computer to undo it.
 
+Support for these is very limited. If one doesn't work on your console,
+report it only at
+
+  https://github.com/andr36oid/clone_issue_tracker
+
+and attach all the boot files of a system that works on your console (for
+example everything at the top of the first drive of the SD card it came
+with). Reports without those files are closed.
+
 Each folder holds one board:
   rk3326-r36s-android.dtb   the device tree Android boots with
   rg351mp-kernel.dtb        the panel setup U-Boot uses for the boot logo

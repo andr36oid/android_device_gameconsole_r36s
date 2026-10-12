@@ -150,6 +150,8 @@ device_profile() {  # <folder> <dtb name> <extra kernel arguments>
 device_profile R46H rk3326-r46h-android.dtb "androidboot.lcd_density=304"
 # R50S: the 480x854 panel is mounted sideways
 device_profile R50S rk3326-r50s-android.dtb "androidboot.sf_orientation=ORIENTATION_270 fbcon=rotate:3"
+# Diium D-28S: an EE clone whose 480x640 panel is mounted sideways
+device_profile D-28S rk3326-r36s-clone-d28s.dtb "androidboot.sf_orientation=ORIENTATION_270 fbcon=rotate:3"
 
 # First-stage ramdisk. This U-Boot only takes legacy uImage ramdisks, so it is
 # wrapped with mkimage. ramdisk.uimg has Magisk baked in; ramdisk-stock.uimg is
@@ -186,6 +188,9 @@ if python3 -c 'import PIL' 2>/dev/null; then
     python3 BOOT/gen-logo.py --build "$VERSION" -w 1024 -H 768 -o "$BOOT_TMP/Devices/R46H/logo.bmp"
     # the R50S panel is 480x854 mounted sideways: drawn landscape, stored turned
     python3 BOOT/gen-logo.py --build "$VERSION" -w 854 -H 480 --turn -o "$BOOT_TMP/Devices/R50S/logo.bmp"
+    # the D-28S shows the main 640x480 logo on its sideways 480x640 panel, turned
+    python3 -c 'import sys; from PIL import Image; Image.open(sys.argv[1]).rotate(90, expand=True).save(sys.argv[2], format="BMP")' \
+        "$BOOT_TMP/logo.bmp" "$BOOT_TMP/Devices/D-28S/logo.bmp"
 else
     echo "Pillow not found, keeping the committed boot logos"
 fi
@@ -208,6 +213,11 @@ if python3 -c 'import PIL' 2>/dev/null; then
         "$MKIMAGE" -A arm64 -O linux -T ramdisk -C none -n "andr36oid resizer screens" \
             -d "$TMPDIR/resize-screens.cpio.gz" "$BOOT_TMP/resize-screens-${size%x*}.uimg" >/dev/null
     done
+    # The D-28S's turned logo has the size of a 640x480 one, so boot.ini can't tell
+    # them apart; its folder brings its turned screens under their own name instead
+    python3 resize-screens/gen-resize-screens.py -w 640 -H 480 --turn -o "$TMPDIR/resize-screens.cpio.gz"
+    "$MKIMAGE" -A arm64 -O linux -T ramdisk -C none -n "andr36oid resizer screens" \
+        -d "$TMPDIR/resize-screens.cpio.gz" "$BOOT_TMP/Devices/D-28S/resize-screens-turned.uimg" >/dev/null
 fi
 # The experimental boards with a 720x720 screen get the same logo
 grep -v '^#' experimental-dtbs/list.txt | while read -r name folder size; do
@@ -222,6 +232,10 @@ if python3 -c 'import PIL' 2>/dev/null; then
     python3 BOOT/gen-charge.py -w 720 -H 720 -o "$BOOT_TMP/Panels/R36S-Plus"
     python3 BOOT/gen-charge.py -w 1024 -H 768 -o "$BOOT_TMP/Devices/R46H"
     python3 BOOT/gen-charge.py -w 854 -H 480 --turn -o "$BOOT_TMP/Devices/R50S"
+    for f in "$BOOT_TMP"/battery_*.bmp; do
+        python3 -c 'import sys; from PIL import Image; Image.open(sys.argv[1]).rotate(90, expand=True).save(sys.argv[2], format="BMP")' \
+            "$f" "$BOOT_TMP/Devices/D-28S/${f##*/}"
+    done
     grep -v '^#' experimental-dtbs/list.txt | while read -r name folder size; do
         [ "$size" = 720x720 ] || continue
         cp "$BOOT_TMP"/Panels/R36S-Plus/battery_*.bmp "$BOOT_TMP/Experimental/$folder/"

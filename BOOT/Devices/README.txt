@@ -18,3 +18,4 @@ Keep a copy of the files you replace so you can go back.
 
 R46H  1024x768 screen
 R50S  480x854 screen, mounted sideways
+D-28S Diium D-28S, 480x640 screen, mounted sideways

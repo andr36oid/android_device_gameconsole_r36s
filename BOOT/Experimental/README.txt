@@ -54,11 +54,13 @@ Genuine R36S wiring, only the screen differs:
   R36S-Panel3-Alt     Panel 3 with the init sequence ROCKNIX uses
 
 "EE" clones (ship with EmuELEC, volume keys on one ADC pin), 640x480:
-  EE-G80-Panel8       G80C / G80CA / G80D, panel 8
+  EE-G80-Panel8       G80C / G80CA / G80D, panel 8, and R36S-V12 clones
+                      wired like the G80 (try this one first on a V12)
   EE-G80-Panel9       G80CA, panel 9
   EE-K36-Panel1       K36 / HG36 / L35 / R36 Pro / ANS11 / "R36S Panel 1"
   EE-K36-Panel4       K36 / RX6S / RX6H / "R36S Panel 4" clones
-  EE-V12-Var2         R36S-V12 clone, variant 2
+  EE-V12-Var2         R36S-V12 clone, variant 2 (screen powered by the
+                      power chip; backlight on but no picture: EE-G80-Panel8)
   EE-V12-Var3-Panel3  R36S-V12 clone, variant 3 with panel 3
   EE-V12-Var3-PanelA  R36S-V12 clone, variant 3 with the other panel
   K36S                K36S (RK915 Wi-Fi, see below)

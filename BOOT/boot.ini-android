@@ -7,6 +7,28 @@ odroidgoa-uboot-config
 
 setenv bootrootfs "fw_devlink=permissive rootwait consoleblank=0 swiotlb=1 coherent_pool=1m"
 
+# Some clones are sold as 1 GB but carry 512 MB. Our U-Boot sets ram_mb (older ones
+# leave it empty). Below 768 MB: half the CMA reserve (the DTB's 128 MB leaves Android
+# about 300 MB) and a warning on the screen for 10 seconds, since Android may start
+# slowly or not at all.
+if test -n "${ram_mb}"; then
+    if test ${ram_mb} -lt 768; then
+        setenv bootrootfs "cma=64M ${bootrootfs}"
+        lcd setfg yellow
+        lcd setline 3
+        lcd putstr "  This console has less than 1 GB of RAM"
+        lcd setline 4
+        lcd putstr "  (${ram_mb} MB usable), though sellers"
+        lcd setline 5
+        lcd putstr "  often claim 1 GB."
+        lcd setline 6
+        lcd putstr "  Android may start slowly or freeze."
+        lcd setline 8
+        lcd putstr "  Starting in 10 seconds..."
+        sleep 10
+    fi
+fi
+
 # Only errors go out on the serial port: at 115200 baud every kernel line costs
 # about 6ms and the kernel waits for it, the full log is still in dmesg (with
 # timestamps). For the full log on serial, change loglevel=4 to loglevel=8.

@@ -11,6 +11,7 @@ panel3-alt              R36S-Panel3-Alt
 g80-panel8              EE-G80-Panel8
 g80-panel9              EE-G80-Panel9
 k36-panel1              EE-K36-Panel1
+kinhank-k36             Kinhank-K36
 k36-panel4              EE-K36-Panel4
 rx6h                    RX6H
 v12-var1-panel8         EE-V12-Var1-Panel8

@@ -71,6 +71,8 @@ Genuine R36S wiring, only the screen differs:
   R36T                R36T (RK915 Wi-Fi)
   XF35H               XF35H (RK915 Wi-Fi, rumble)
   RX6H                RX6H (tested: screen, buttons, sticks, speaker)
+  Kinhank-K36         Kinhank K36 (tested; like EE-K36-Panel1 with the right
+                      stick turned around)
 
 "EE" clones with a 720x720 screen:
   R36-Ultra           R36 Ultra / GR36 (RK915 Wi-Fi, RGB LED, rumble)

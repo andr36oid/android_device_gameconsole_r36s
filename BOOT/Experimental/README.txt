@@ -65,6 +65,7 @@ Genuine R36S wiring, only the screen differs:
                       power chip; backlight on but no picture: EE-G80-Panel8)
   EE-V12-Var3-Panel3  R36S-V12 clone, variant 3 with panel 3
   EE-V12-Var3-PanelA  R36S-V12 clone, variant 3 with the other panel
+                      (tested; also for V12s whose stock DTB looks like a G80)
   K36S                K36S (RK915 Wi-Fi, see below)
   R36T                R36T (RK915 Wi-Fi)
   XF35H               XF35H (RK915 Wi-Fi, rumble)

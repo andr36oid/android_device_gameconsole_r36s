@@ -59,7 +59,7 @@ Genuine R36S wiring, only the screen differs:
   EE-G80-Panel9       G80CA, panel 9
   EE-K36-Panel1       K36 / HG36 / L35 / R36 Pro / ANS11 / "R36S Panel 1"
                       (tested on an L35: screen, buttons, sticks)
-  EE-K36-Panel4       K36 / RX6S / RX6H / "R36S Panel 4" clones
+  EE-K36-Panel4       K36 / RX6S / "R36S Panel 4" clones
   EE-V12-Var1-Panel8  R36S-V12 clone, variant 1 with panel 8 (garbled or no
                       picture with EE-G80-Panel8: try this one)
   EE-V12-Var2         R36S-V12 clone, variant 2 (screen powered by the
@@ -70,6 +70,7 @@ Genuine R36S wiring, only the screen differs:
   K36S                K36S (RK915 Wi-Fi, see below)
   R36T                R36T (RK915 Wi-Fi)
   XF35H               XF35H (RK915 Wi-Fi, rumble)
+  RX6H                RX6H (tested: screen, buttons, sticks, speaker)
 
 "EE" clones with a 720x720 screen:
   R36-Ultra           R36 Ultra / GR36 (RK915 Wi-Fi, RGB LED, rumble)

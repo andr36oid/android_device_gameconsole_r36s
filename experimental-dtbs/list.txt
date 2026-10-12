@@ -12,6 +12,7 @@ g80-panel8              EE-G80-Panel8
 g80-panel9              EE-G80-Panel9
 k36-panel1              EE-K36-Panel1
 k36-panel4              EE-K36-Panel4
+rx6h                    RX6H
 v12-var1-panel8         EE-V12-Var1-Panel8
 v12-var2                EE-V12-Var2
 v12-var3-panel3         EE-V12-Var3-Panel3

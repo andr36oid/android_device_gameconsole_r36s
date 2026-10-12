@@ -61,7 +61,8 @@ Genuine R36S wiring, only the screen differs:
                       (tested on an L35: screen, buttons, sticks)
   EE-K36-Panel4       K36 / RX6S / "R36S Panel 4" clones
   EE-V12-Var1-Panel8  R36S-V12 clone, variant 1 with panel 8 (garbled or no
-                      picture with EE-G80-Panel8: try this one)
+                      picture with EE-G80-Panel8: try this one; tested on two
+                      V12 clones: screen, buttons, speaker)
   EE-V12-Var2         R36S-V12 clone, variant 2 (screen powered by the
                       power chip; backlight on but no picture: EE-G80-Panel8)
   EE-V12-Var3-Panel3  R36S-V12 clone, variant 3 with panel 3

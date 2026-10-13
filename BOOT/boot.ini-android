@@ -1,5 +1,17 @@
 odroidgoa-uboot-config
 
+# Clones: light the status LED right away instead of a few seconds later when the
+# kernel gets to it. The DTB brings the U-Boot commands for its board (andr36oid,u-boot
+# in the status LED node); the genuine R36S has none, its green LED is on by itself.
+# The kernel keeps the light like this until the battery driver is up.
+setenv fdt_addr_r "0x01f00000"
+if load mmc 1:1 ${fdt_addr_r} rk3326-r36s-android.dtb; then
+    fdt addr ${fdt_addr_r}
+    if fdt get value status_led /andr36oid-status-led andr36oid,u-boot; then
+        run status_led
+    fi
+fi
+
 # Android boot: kernel, first-stage ramdisk (with Magisk) and DTB. The ramdisk's init
 # mounts system and vendor by partition name and switches root into system, so no
 # root= here. The first boot runs boot.ini (the resizer), which then puts this file
@@ -46,7 +58,6 @@ setenv ramdisk_addr_r "0x0a200000"
 setenv initrd_high "0xffffffffffffffff"
 setenv fdt_high "0xffffffffffffffff"
 
-load mmc 1:1 ${fdt_addr_r} rk3326-r36s-android.dtb
 
 # Recovery: FN held at power-on, or a file recovery.txt on BOOT.
 # FN is on a different pin per board family, and hwrev (the board ID resistor

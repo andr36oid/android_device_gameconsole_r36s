@@ -152,6 +152,8 @@ device_profile R46H rk3326-r46h-android.dtb "androidboot.lcd_density=304"
 device_profile R50S rk3326-r50s-android.dtb "androidboot.sf_orientation=ORIENTATION_270 fbcon=rotate:3"
 # Diium D-28S: an EE clone whose 480x640 panel is mounted sideways
 device_profile D-28S rk3326-r36s-clone-d28s.dtb "androidboot.sf_orientation=ORIENTATION_270 fbcon=rotate:3"
+# BatleXP G350: the R36S board with another 640x480 panel, nothing to change for Android
+device_profile G350 rk3326-g350-android.dtb ""
 
 # First-stage ramdisk. This U-Boot only takes legacy uImage ramdisks, so it is
 # wrapped with mkimage. ramdisk.uimg has Magisk baked in; ramdisk-stock.uimg is
@@ -191,6 +193,7 @@ if python3 -c 'import PIL' 2>/dev/null; then
     # the D-28S shows the main 640x480 logo on its sideways 480x640 panel, turned
     python3 -c 'import sys; from PIL import Image; Image.open(sys.argv[1]).rotate(90, expand=True).save(sys.argv[2], format="BMP")' \
         "$BOOT_TMP/logo.bmp" "$BOOT_TMP/Devices/D-28S/logo.bmp"
+    cp "$BOOT_TMP/logo.bmp" "$BOOT_TMP/Devices/G350/logo.bmp"
 else
     echo "Pillow not found, keeping the committed boot logos"
 fi

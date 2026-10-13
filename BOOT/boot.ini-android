@@ -14,8 +14,7 @@ fi
 
 # Android boot: kernel, first-stage ramdisk (with Magisk) and DTB. The ramdisk's init
 # mounts system and vendor by partition name and switches root into system, so no
-# root= here. The first boot runs boot.ini (the resizer), which then puts this file
-# in its place.
+# root= here. mkimg.sh copies this file to boot.ini.
 
 setenv bootrootfs "fw_devlink=permissive rootwait consoleblank=0 swiotlb=1 coherent_pool=1m"
 

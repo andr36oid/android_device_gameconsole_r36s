@@ -47,7 +47,6 @@ need_cp() { # need_cp <from> <to>
 
 echo "Copying over kernel files"
 need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/Image" BOOT/
-need_cp ../common/resizing/prebuilt/Image-resizing BOOT/
 need_cp ./Image-recovery BOOT/
 need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel0.dtb" BOOT/Panels/Panel0/rk3326-r36s-android.dtb
 need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel1.dtb" BOOT/Panels/Panel1/rk3326-r36s-android.dtb
@@ -71,10 +70,10 @@ truncate -s "${IMGSIZE}G" "$IMGNAME"
 # Flush only the image: a bare sync waits for every filesystem on the build host
 sync "$IMGNAME"
 
-# The first-boot resizer (Image-resizing) runs "parted mkpart" for userdata and
-# EASYROMS after 5701009s, and parted gives them the lowest free numbers. So
-# numbers 6 and 7 are held by placeholders while vendor, metadata, misc and
-# cache are created, and freed again, to keep userdata p6 and EASYROMS p7.
+# On the first start Android adds userdata (p6) and EASYROMS (p7) after 5701009s
+# (common/firstresize). Cards set up by the older resizer have them under the same
+# numbers, which parted gave out lowest-free-first; numbers 6 and 7 are held by
+# placeholders while vendor, metadata, misc and cache are created, and freed again.
 # The old BOOT partition's second half is where vendor and the rest now live.
 echo "Creating partitions (GPT) on $IMGNAME..."
 parted -s "$IMGNAME" mktable gpt
@@ -134,6 +133,9 @@ $MKFS_FAT -F 32 -n BOOT "$BOOT_IMG"
 BOOT_TMP="$TMPDIR/BOOT_COPY"
 mkdir -p "$BOOT_TMP"
 cp -a BOOT/* "$BOOT_TMP"/ || die "could not copy BOOT/ to $BOOT_TMP"
+# The card starts Android right away, the first start sets up the partitions itself.
+# boot.ini-android stays too, for older tools that copy it over boot.ini.
+cp BOOT/boot.ini-android "$BOOT_TMP/boot.ini"
 
 # Other consoles on the same image (BOOT/Devices): the flasher copies the chosen
 # folder's files to the BOOT root under the fixed names every U-Boot looks for.
@@ -145,6 +147,7 @@ device_profile() {  # <folder> <dtb name> <extra kernel arguments>
     cp "$BOOT_TMP/Devices/$1/logo.bmp" "$BOOT_TMP/Devices/$1/logo_kernel.bmp"
     sed "s|^setenv android2 \"|setenv android2 \"$3 |" BOOT/boot.ini-android > "$BOOT_TMP/Devices/$1/boot.ini-android"
     grep -q "^setenv android2 \"$3 " "$BOOT_TMP/Devices/$1/boot.ini-android"
+    cp "$BOOT_TMP/Devices/$1/boot.ini-android" "$BOOT_TMP/Devices/$1/boot.ini"
 }
 # R46H: 1024x768 at 304 dpi
 device_profile R46H rk3326-r46h-android.dtb "androidboot.lcd_density=304"
@@ -204,24 +207,6 @@ cp "$BOOT_TMP/Panels/R36S-Plus/logo.bmp" "$BOOT_TMP/Panels/R36S-Plus/logo_kernel
 for d in "$BOOT_TMP"/Devices/*; do
     if [ -f "$d/logo.bmp" ]; then cp "$d/logo.bmp" "$d/logo_kernel.bmp"; fi
 done
-# English resizer screens (640x480, 720x720, 1024x768 for the R46H and the R50S's
-# sideways 854x480), loaded by the first-boot boot.ini as an extra ramdisk for
-# Image-resizing. Without Pillow the resizer shows its own English screens as before.
-if python3 -c 'import PIL' 2>/dev/null; then
-    for size in 640x480 720x720 1024x768 854x480; do
-        turn=
-        [ "$size" = 854x480 ] && turn=--turn
-        python3 resize-screens/gen-resize-screens.py -w "${size%x*}" -H "${size#*x}" $turn \
-            -o "$TMPDIR/resize-screens.cpio.gz"
-        "$MKIMAGE" -A arm64 -O linux -T ramdisk -C none -n "andr36oid resizer screens" \
-            -d "$TMPDIR/resize-screens.cpio.gz" "$BOOT_TMP/resize-screens-${size%x*}.uimg" >/dev/null
-    done
-    # The D-28S's turned logo has the size of a 640x480 one, so boot.ini can't tell
-    # them apart; its folder brings its turned screens under their own name instead
-    python3 resize-screens/gen-resize-screens.py -w 640 -H 480 --turn -o "$TMPDIR/resize-screens.cpio.gz"
-    "$MKIMAGE" -A arm64 -O linux -T ramdisk -C none -n "andr36oid resizer screens" \
-        -d "$TMPDIR/resize-screens.cpio.gz" "$BOOT_TMP/Devices/D-28S/resize-screens-turned.uimg" >/dev/null
-fi
 # The experimental boards with a 720x720 screen get the same logo
 grep -v '^#' experimental-dtbs/list.txt | while read -r name folder size; do
     [ "$size" = 720x720 ] || continue
@@ -294,7 +279,7 @@ want=$(cd "$BOOT_TMP" && find . -type f | wc -l)
 have=$(mdir -/ -b -i "$BOOT_IMG" ::/ | grep -vc '/$' || true)
 [ "$want" = "$have" ] || die "BOOT has $have files, expected $want"
 for f in Image ramdisk.uimg ramdisk-stock.uimg boot.ini boot.ini-android rk3326-r36s-android.dtb \
-    Image-resizing Image-recovery; do
+    Image-recovery; do
     [ -f "$BOOT_TMP/$f" ] || die "$f is missing from the BOOT files"
     mtype -i "$BOOT_IMG" "::/$f" | cmp -s - "$BOOT_TMP/$f" || die "$f on BOOT differs from the build's"
 done

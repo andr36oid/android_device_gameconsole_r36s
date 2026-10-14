@@ -90,6 +90,12 @@ parted -s "$IMGNAME" mkpart misc 917504s 925695s
 parted -s "$IMGNAME" mkpart cache ext4 925696s 1081343s
 parted -s "$IMGNAME" rm 7
 parted -s "$IMGNAME" rm 6
+# Windows offers to format every partition it can't read (about ten "format disk?"
+# popups): GPT bit 63 asks it not to give them a drive letter. Linux, U-Boot and
+# Android ignore the bit, and Disk Management can still give one a letter by hand.
+for n in 2 3 4 5 8 9 10 11; do
+    parted -s "$IMGNAME" set "$n" no_automount on
+done
 
 dd if=bootloader/idbloader.img of="$IMGNAME" conv=fsync,notrunc bs=512 seek=64
 dd if=bootloader/uboot.img of="$IMGNAME" conv=fsync,notrunc bs=512 seek=16384

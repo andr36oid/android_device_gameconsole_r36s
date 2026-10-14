@@ -106,14 +106,8 @@ def bugdroid(d, cx, cy, r, green, white, bg):
         disc(d, cx + s * 0.42 * r, cy - 0.42 * r, 0.10 * r, white)
 
 
-def render(W, H, title, subtitle, build="", credits="", ss=4):
-    w, h = W * ss, H * ss
-    u = min(w, h)
-    im = Image.new("RGB", (w, h), BLACK)
-    d = ImageDraw.Draw(im)
-
-    margin = 0.07 * u
-
+def draw_wordmark(d, w, h, u, title, subtitle, credits, fg=WHITE, light=LIGHT, dim=DIM):
+    """Title, the credits line above it and the subtitle, centred as on the boot logo."""
     # ---- title
     size = 0.20 * u
     track = 0.008 * u
@@ -126,7 +120,7 @@ def render(W, H, title, subtitle, build="", credits="", ss=4):
         tw = tracked_w(f_t, title, track)
     tx = (w - tw) / 2
     ty = h * 0.46
-    draw_tracked(d, f_t, (tx, ty), title, track, WHITE)
+    draw_tracked(d, f_t, (tx, ty), title, track, fg)
 
     # ---- credits, centred right above the title, monospace
     if credits:
@@ -153,12 +147,63 @@ def render(W, H, title, subtitle, build="", credits="", ss=4):
             if txt is None:
                 x += heart(d, x, cy, f, HEART)
             else:
-                d.text((x, cy), txt, font=f, fill=DIM, anchor="ls")
+                d.text((x, cy), txt, font=f, fill=dim, anchor="ls")
                 x += text_w(f, txt)
 
     # ---- subtitle, right-aligned to title
     f_s = font("Roboto-Light.ttf", 0.066 * u)
-    d.text((tx + tw, ty + 0.045 * u + cap_h(f_s)), subtitle, font=f_s, fill=LIGHT, anchor="rs")
+    d.text((tx + tw, ty + 0.045 * u + cap_h(f_s)), subtitle, font=f_s, fill=light, anchor="rs")
+    return tx, tw
+
+
+def draw_lineage(d, x, base_y, u, k, R, f_lo, f_lp, line, bg):
+    """The Lineage mark, "LineageOS" and a small line above it, left edge at x."""
+    mark_cx = x + 2.1 * R
+    text_x = x + 4.2 * R + 0.025 * u * k
+    lineage_mark(d, mark_cx, base_y - 0.5 * cap_h(f_lo) - 0.2 * R, R, LINEAGE, bg)
+    d.text((text_x, base_y), "LineageOS", font=f_lo, fill=LINEAGE, anchor="ls")
+    d.text((text_x, base_y - cap_h(f_lo) - 0.020 * u * k), line, font=f_lp, fill=LINEAGE, anchor="ls")
+
+
+def setup_wizard(out_dir, credits, ss=4):
+    """The setup wizard's first and last screen: the wordmark on a transparent
+    background, white for dark mode and dark grey for light mode, and the small
+    "Based on LineageOS" for the lower left corner. Cropped to what is drawn."""
+    w, h = 640 * ss, 480 * ss
+    u = min(w, h)
+    for name, fg, light, dim in (("drawable-night-nodpi", WHITE, LIGHT, DIM),
+                                 ("drawable-nodpi", (0x20, 0x21, 0x24), (0x3C, 0x40, 0x43), (0x70, 0x75, 0x7A))):
+        im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        draw_wordmark(ImageDraw.Draw(im), w, h, u, "andr36oid", "RK3326 Community", credits, fg, light, dim)
+        im = im.crop(im.getbbox())
+        im = im.resize((im.width // ss, im.height // ss), Image.LANCZOS)
+        os.makedirs(os.path.join(out_dir, name), exist_ok=True)
+        im.save(os.path.join(out_dir, name, "andr36oid_logo.png"))
+    # the lineage mark punches its rings out with the background colour: draw on
+    # black, then use the brightness as alpha so the holes are see-through
+    R = 0.038 * u
+    f_lo = font("Roboto-Medium.ttf", 0.070 * u)
+    f_lp = font("Roboto-Regular.ttf", 0.040 * u)
+    im = Image.new("RGB", (w, h), BLACK)
+    draw_lineage(ImageDraw.Draw(im), 0.1 * u, 0.5 * h, u, 1.0, R, f_lo, f_lp, "Based on", BLACK)
+    alpha = im.convert("L").point(lambda v: min(255, v * 255 // max(LINEAGE)))
+    teal = Image.new("RGBA", (w, h), LINEAGE + (255,))
+    teal.putalpha(alpha)
+    teal = teal.crop(alpha.getbbox())
+    teal = teal.resize((teal.width // ss, teal.height // ss), Image.LANCZOS)
+    teal.save(os.path.join(out_dir, "drawable-nodpi", "based_on_lineageos.png"))
+    print(f"wrote the setup wizard logos to {out_dir}")
+
+
+def render(W, H, title, subtitle, build="", credits="", ss=4):
+    w, h = W * ss, H * ss
+    u = min(w, h)
+    im = Image.new("RGB", (w, h), BLACK)
+    d = ImageDraw.Draw(im)
+
+    margin = 0.07 * u
+
+    tx, tw = draw_wordmark(d, w, h, u, title, subtitle, credits)
 
     # ---- build number, top right, monospace
     if build:
@@ -194,11 +239,7 @@ def render(W, H, title, subtitle, build="", credits="", ss=4):
     d.text((an_x, base_y - cap_h(f_an) - 0.020 * u * k), "Based on", font=f_pb, fill=DIM, anchor="ls")
 
     # Powered by LineageOS (bottom left), Lineage teal
-    mark_cx = margin + 2.1 * R
-    text_x = margin + 4.2 * R + 0.025 * u * k
-    lineage_mark(d, mark_cx, base_y - 0.5 * cap_h(f_lo) - 0.2 * R, R, LINEAGE, BLACK)
-    d.text((text_x, base_y), "LineageOS", font=f_lo, fill=LINEAGE, anchor="ls")
-    d.text((text_x, base_y - cap_h(f_lo) - 0.020 * u * k), "Powered by", font=f_lp, fill=LINEAGE, anchor="ls")
+    draw_lineage(d, margin, base_y, u, k, R, f_lo, f_lp, "Powered by", BLACK)
 
     return im.resize((W, H), Image.LANCZOS)
 
@@ -216,7 +257,12 @@ def main():
                    help='"<prefix> from a - b - c"; names go bold, hyphens become middle dots, <3 becomes a heart ("" to hide)')
     p.add_argument("--turn", action="store_true",
                    help="panel mounted sideways: draw W x H, store it turned a quarter anticlockwise")
+    p.add_argument("--setup-wizard", metavar="RES_DIR",
+                   help="instead: the setup wizard's logo PNGs into RES_DIR (packages/apps/SetupWizard/res)")
     a = p.parse_args()
+    if a.setup_wizard:
+        setup_wizard(a.setup_wizard, a.credits)
+        return
 
     im = render(a.width, a.height, a.title, a.subtitle, a.build, a.credits)
     if a.turn:

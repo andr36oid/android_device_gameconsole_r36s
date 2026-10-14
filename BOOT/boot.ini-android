@@ -40,10 +40,13 @@ if test -n "${ram_mb}"; then
     fi
 fi
 
-# Only errors go out on the serial port: at 115200 baud every kernel line costs
-# about 6ms and the kernel waits for it, the full log is still in dmesg (with
-# timestamps). For the full log on serial, change loglevel=4 to loglevel=8.
-setenv console "console=ttyS2,115200n8 loglevel=4 printk.time=1 androidboot.console=ttyS2 vt.global_cursor_default=0"
+# No serial console: the kernel log is still in dmesg (with timestamps) and in the
+# crash log. console=null also keeps the kernel off the screen (it would take the
+# VT console otherwise). Settings > System > Kernel Tweaks can switch the serial
+# console back on (kernel-tweaks.txt below). With it on, only errors go out on
+# serial unless loglevel is raised there too: at 115200 baud every kernel line
+# costs about 6ms and the kernel waits for it.
+setenv console "console=null loglevel=4 printk.time=1 vt.global_cursor_default=0 fiq_debugger.disable=1"
 
 setenv android "firmware_class.path=/vendor/firmware androidboot.hardware=rk30board androidboot.selinux=permissive androidboot.verifiedbootstate=green"
 
@@ -87,8 +90,15 @@ then
     booti ${kernel_addr_r} - ${fdt_addr_r}
 else
     load mmc 1:1 ${kernel_addr_r} Image
+    # Kernel Tweaks options that take effect at a start (kt_args=..., written by
+    # Android). They come last, so they win over the same options above. Recovery
+    # starts without them.
+    setenv kt_args ""
+    if load mmc 1:1 ${ramdisk_addr_r} kernel-tweaks.txt; then
+        env import -t -r ${ramdisk_addr_r} ${filesize}
+    fi
     # A legacy uImage: this U-Boot has no raw initrd support (addr:size)
     load mmc 1:1 ${ramdisk_addr_r} ramdisk.uimg
-    setenv bootargs "${bootrootfs} ${android} ${android2} ${console}"
+    setenv bootargs "${bootrootfs} ${android} ${android2} ${console} ${kt_args}"
     booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
 fi

@@ -6,7 +6,14 @@ DATE=$(date -u +%Y%m%d)
 TIME=$(date -u +%H%M)
 DEVICE=r36s-android
 IMGNAME=$LINEAGEVERSION-$DATE-$TIME-$DEVICE.img
-IMGSIZE=3    # GiB
+# AUTOAPK (p12): the bundled apps, FAT32, right after system. The first start moves it
+# behind userdata, the start after the apps are installed gives it to userdata
+# (common/firstresize). The image ends with it.
+AUTOAPK_START=5701009
+AUTOAPK_SECTORS=4194304    # 2 GiB
+AUTOAPK_END=$((AUTOAPK_START + AUTOAPK_SECTORS - 1))
+# + 8 MiB: the two placeholders and the backup GPT
+IMG_SECTORS=$((AUTOAPK_END + 1 + 16384))
 OUTDIR=${ANDROID_PRODUCT_OUT:="../../../out/target/product/r36s"}
 TMPDIR=$(mktemp -d)
 # A build that stops (error, Ctrl-C, kill) leaves no half-made 3 GB image behind.
@@ -66,7 +73,7 @@ done
 
 echo "Creating image file $IMGNAME..."
 IMG_STARTED=1
-truncate -s "${IMGSIZE}G" "$IMGNAME"
+truncate -s $((IMG_SECTORS * 512)) "$IMGNAME"
 # Flush only the image: a bare sync waits for every filesystem on the build host
 sync "$IMGNAME"
 
@@ -82,12 +89,13 @@ parted -s "$IMGNAME" mkpart system ext4 1081344s 5701008s
 parted -s "$IMGNAME" mkpart idbloader 64s 16383s
 parted -s "$IMGNAME" mkpart uboot 16384s 24575s
 parted -s "$IMGNAME" mkpart trust 24576s 32767s
-parted -s "$IMGNAME" mkpart placeholder6 5701009s 5701016s
-parted -s "$IMGNAME" mkpart placeholder7 5701017s 5701024s
+parted -s "$IMGNAME" mkpart placeholder6 $((AUTOAPK_END + 1))s $((AUTOAPK_END + 8))s
+parted -s "$IMGNAME" mkpart placeholder7 $((AUTOAPK_END + 9))s $((AUTOAPK_END + 16))s
 parted -s "$IMGNAME" mkpart vendor ext4 557056s 884735s
 parted -s "$IMGNAME" mkpart metadata ext4 884736s 917503s
 parted -s "$IMGNAME" mkpart misc 917504s 925695s
 parted -s "$IMGNAME" mkpart cache ext4 925696s 1081343s
+parted -s "$IMGNAME" mkpart AUTOAPK fat32 ${AUTOAPK_START}s ${AUTOAPK_END}s
 parted -s "$IMGNAME" rm 7
 parted -s "$IMGNAME" rm 6
 # Windows offers to format every partition it can't read (about ten "format disk?"
@@ -349,6 +357,32 @@ mkfs_part() { # mkfs_part <label> <start sector> <end sector>
 }
 mkfs_part metadata 884736 917503
 mkfs_part cache 925696 1081343
+
+# AUTOAPK: every APK the build bundles with its .yml, the first-start settings in
+# .andr36oid/firstrun, and a README for people adding their own from a PC
+echo "Making AUTOAPK..."
+APPS_SRC="$OUTDIR/autoapk"
+[ -d "$APPS_SRC" ] || die "no $APPS_SRC (the bundled apps)"
+APPS_IMG="$TMPDIR/autoapk.img"
+truncate -s $((AUTOAPK_SECTORS * 512)) "$APPS_IMG"
+$MKFS_FAT -F 32 -n AUTOAPK "$APPS_IMG" > /dev/null
+cp AUTOAPK-README.txt "$APPS_SRC/README.txt"
+(
+    cd "$APPS_SRC"
+    shopt -s dotglob nullglob
+    for f in *; do
+        mcopy -s -i "$APPS_IMG" "$f" ::/ || die "could not copy $f to AUTOAPK"
+    done
+)
+want=$(cd "$APPS_SRC" && find . -type f | wc -l)
+have=$(mdir -/ -b -i "$APPS_IMG" ::/ | grep -vc '/$' || true)
+[ "$want" = "$have" ] || die "AUTOAPK has $have files, expected $want"
+for f in "$APPS_SRC"/*.apk; do
+    mtype -i "$APPS_IMG" "::/${f##*/}" | cmp -s - "$f" || die "${f##*/} on AUTOAPK differs from the build's"
+done
+echo "AUTOAPK: $have files, $(du -sh --apparent-size "$APPS_SRC" | cut -f1) of 2 GiB"
+dd if="$APPS_IMG" of="$IMGNAME" bs=1M seek=$((AUTOAPK_START * 512)) oflag=seek_bytes conv=notrunc,sparse,fsync status=none
+rm -f "$APPS_IMG"
 
 sync "$IMGNAME"
 parted -s "$IMGNAME" unit s print

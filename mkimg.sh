@@ -389,5 +389,12 @@ parted -s "$IMGNAME" unit s print
 IMG_DONE=1
 echo "Done, created $IMGNAME!"
 rm -rf "$BOOT_IMG" "$BOOT_TMP" "$SYS_RAW" "$VENDOR_RAW"
-zip -r -q "$IMGNAME.zip" "$IMGNAME"
+# pigz writes the same kind of .zip (one deflated file, zip64) on every core: seconds
+# instead of minutes, and no bigger. zip where there is no pigz.
+if command -v pigz > /dev/null; then
+    pigz -K -6 -c "$IMGNAME" > "$IMGNAME.zip.part" && mv "$IMGNAME.zip.part" "$IMGNAME.zip" ||
+        { rm -f "$IMGNAME.zip.part"; die "pigz could not pack $IMGNAME"; }
+else
+    zip -q "$IMGNAME.zip" "$IMGNAME" || die "zip could not pack $IMGNAME"
+fi
 echo "Packaged $IMGNAME.zip"

@@ -1,11 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-LINEAGEVERSION=lineage-18.1
 DATE=$(date -u +%Y%m%d)
 TIME=$(date -u +%H%M)
 DEVICE=r36s-android
-IMGNAME=$LINEAGEVERSION-$DATE-$TIME-$DEVICE.img
+IMGNAME=andr36oid-$DATE-$TIME-rk3326.img
 # AUTOAPK (p12): the bundled apps, FAT32, right after system. The first start moves it
 # behind userdata, the start after the apps are installed gives it to userdata
 # (common/firstresize). The image ends with it.

@@ -1,0 +1,1 @@
+First start: this report was made because the image ships with make-report.txt on BOOT.

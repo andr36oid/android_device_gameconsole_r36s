@@ -139,6 +139,9 @@ $MKFS_FAT -F 32 -n BOOT "$BOOT_IMG"
 BOOT_TMP="$TMPDIR/BOOT_COPY"
 mkdir -p "$BOOT_TMP"
 cp -a BOOT/* "$BOOT_TMP"/ || die "could not copy BOOT/ to $BOOT_TMP"
+# BOOT/make-report.txt comes along: the first start saves a problem report to
+# BOOT/andr36oid-reports and deletes the file, so anyone with a problem after
+# flashing has a report ready to send. Its text is the report's note.
 # The card starts Android right away, the first start sets up the partitions itself.
 # boot.ini-android stays too, for older tools that copy it over boot.ini.
 cp BOOT/boot.ini-android "$BOOT_TMP/boot.ini"

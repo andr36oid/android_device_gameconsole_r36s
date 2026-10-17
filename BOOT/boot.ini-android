@@ -76,6 +76,29 @@ fi
 if test "${hwrev}" = "rg351v"; then
     if gpio input d10; then setenv go_recovery yes; fi
 fi
+# Boot log: Select held at power-on shows the kernel log on the screen and stops on a
+# crash with its message on the screen instead of restarting, for a start that fails
+# before the boot animation. Pins per family as for FN above; the pull-up is set here
+# first (GRF pad pull registers, 01 = up), U-Boot only sets it on some boards.
+#   rg351mp: Select = GPIO3_B1 (d9), GRF_GPIO3B_P bits 2-3
+#   rg351v:  Select = GPIO3_D0 (d24), GRF_GPIO3D_P bits 0-1
+setenv bootlog_args ""
+setenv go_bootlog no
+if test "${hwrev}" = "rg351mp"; then
+    mw.l 0xff140084 0x000c0004
+    if gpio input d9; then setenv go_bootlog yes; fi
+fi
+if test "${hwrev}" = "rg351v"; then
+    mw.l 0xff14008c 0x00030001
+    if gpio input d24; then setenv go_bootlog yes; fi
+fi
+if test "${go_bootlog}" = "yes"; then
+    setenv bootlog_args "console=tty0 loglevel=8 ignore_loglevel printk.devkmsg=on panic=0 androidboot.init_fatal_panic=true"
+    lcd setfg white
+    lcd setline 10
+    lcd putstr "  Select held: boot log on"
+fi
+
 # recovery.txt works on every board. U-Boot can't delete files, so every start
 # goes into recovery until it is deleted on a PC. recovery.txt.txt is what
 # Windows makes when it hides file extensions.
@@ -99,6 +122,6 @@ else
     fi
     # A legacy uImage: this U-Boot has no raw initrd support (addr:size)
     load mmc 1:1 ${ramdisk_addr_r} ramdisk.uimg
-    setenv bootargs "${bootrootfs} ${android} ${android2} ${console} ${kt_args}"
+    setenv bootargs "${bootrootfs} ${android} ${android2} ${console} ${kt_args} ${bootlog_args}"
     booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
 fi

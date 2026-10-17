@@ -1,12 +1,12 @@
 #!/bin/bash
-# Make an EROFS test card from a release image zip: the same build, with system
+# Make an EROFS test card from a release image (.img.xz or .img.zip): the same build, with system
 # (and with --vendor also vendor) turned into EROFS. For a device test of the
 # 4.19 staging erofs driver and a boot time / app start comparison against the
 # ext4 release it was made from.
 #
-#   sudo erofs/erofs-test-image.sh lineage-18.1-...-r36s-android.img.zip [--vendor]
+#   sudo erofs/erofs-test-image.sh andr36oid-...-rk3326.img.xz [--vendor]
 #
-# Writes <name>-erofs.img.zip in the current directory. Nothing else changes:
+# Writes <name>-erofs.img.xz (.img.zip for a .zip release) in the current directory. Nothing else changes:
 # kernel, ramdisk and BOOT files are the release's. The kernel already has
 # CONFIG_EROFS_FS=y + CONFIG_EROFS_FS_ZIP=y, and the ramdisk's fstab already has
 # an erofs line for /system after the ext4 one (first stage init tries the next
@@ -14,7 +14,7 @@
 # whose fstab has an erofs line for /vendor too; the script checks that.
 set -euo pipefail
 
-zip=${1:?usage: erofs-test-image.sh <release .img.zip> [--vendor]}
+zip=${1:?usage: erofs-test-image.sh <release .img.xz|.img.zip> [--vendor]}
 vendor=0
 [ "${2:-}" = --vendor ] && vendor=1
 here=$(cd "$(dirname "$0")" && pwd)
@@ -34,18 +34,25 @@ ddin() { # ddin <src> <dst> <start sector> <sectors>
 ddout() { # ddout <src> <image> <start sector>
     dd if="$1" of="$2" bs=1M oflag=seek_bytes seek=$(($3 * 512)) conv=notrunc status=none
 }
-for t in unzip zip mcopy cpio python3; do
+for t in unzip zip xz mcopy cpio python3; do
     command -v "$t" >/dev/null || { echo "$t not found"; exit 1; }
 done
 
-name=$(unzip -Z1 "$zip" | grep '\.img$' | head -n1)
+case $zip in
+    *.xz) ext=xz; name=$(basename "$zip" .xz) ;;
+    *) ext=zip; name=$(unzip -Z1 "$zip" | grep '\.img$' | head -n1) ;;
+esac
 [ -n "$name" ] || { echo "No .img in $zip"; exit 1; }
 out=$PWD/${name%.img}-erofs.img
-[ -e "$out.zip" ] && { echo "$out.zip already exists"; exit 1; }
+[ -e "$out.$ext" ] && { echo "$out.$ext already exists"; exit 1; }
 
 work=$(mktemp -d "${TMPDIR:-/tmp}/erofs-test.XXXXXX")
 trap 'rm -rf "$work"' EXIT
-unzip -q -d "$work" "$zip" "$name"
+if [ $ext = xz ]; then
+    xz -dc -T0 "$zip" > "$work/$name"
+else
+    unzip -q -d "$work" "$zip" "$name"
+fi
 img=$work/$name
 
 # The first-stage fstab lives in the ramdisk on BOOT
@@ -79,6 +86,10 @@ convert system $SYS_START $SYS_END
 [ $vendor = 1 ] && convert vendor $VEN_START $VEN_END
 
 mv "$img" "$out"
-(cd "$(dirname "$out")" && zip -q "$(basename "$out").zip" "$(basename "$out")")
+if [ $ext = xz ]; then
+    xz -9 -T0 -c "$out" > "$out.xz"
+else
+    (cd "$(dirname "$out")" && zip -q "$(basename "$out").zip" "$(basename "$out")")
+fi
 rm -f "$out"
-echo "Wrote $out.zip"
+echo "Wrote $out.$ext"

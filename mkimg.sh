@@ -209,9 +209,8 @@ if python3 -c 'import PIL' 2>/dev/null; then
     python3 BOOT/gen-logo.py --build "$VERSION" -w 1024 -H 768 -o "$BOOT_TMP/Devices/R46H/logo.bmp"
     # the R50S panel is 480x854 mounted sideways: drawn landscape, stored turned
     python3 BOOT/gen-logo.py --build "$VERSION" -w 854 -H 480 --turn -o "$BOOT_TMP/Devices/R50S/logo.bmp"
-    # the D-28S shows the main 640x480 logo on its sideways 480x640 panel, turned
-    python3 -c 'import sys; from PIL import Image; Image.open(sys.argv[1]).rotate(90, expand=True).save(sys.argv[2], format="BMP")' \
-        "$BOOT_TMP/logo.bmp" "$BOOT_TMP/Devices/D-28S/logo.bmp"
+    # Draw separately so the version label also clears U-Boot after rotation.
+    python3 BOOT/gen-logo.py --build "$VERSION" -w 640 -H 480 --turn -o "$BOOT_TMP/Devices/D-28S/logo.bmp"
     cp "$BOOT_TMP/logo.bmp" "$BOOT_TMP/Devices/G350/logo.bmp"
 else
     echo "Pillow not found, keeping the committed boot logos"

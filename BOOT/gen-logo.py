@@ -22,7 +22,7 @@ LIGHT = (220, 220, 220)
 DIM = (135, 135, 135)
 GREEN = (0x3D, 0xDC, 0x84)
 LINEAGE = (0x16, 0x7C, 0x80)   # LineageOS teal
-HEART = (0x7A, 0x0A, 0x14)     # very dark red
+HEART = (0xA4, 0x38, 0x46)     # muted red, still readable on black
 
 
 def font(name, px):
@@ -45,15 +45,15 @@ def cap_h(f):
 def draw_tracked(d, f, xy, s, track, fill):
     """Draw text with letter spacing, anchored at left baseline. Returns width."""
     x, y = xy
-    x0 = x
     for i, ch in enumerate(s):
-        d.text((x, y), ch, font=f, fill=fill, anchor="ls")
-        x += text_w(f, ch) + (track if i < len(s) - 1 else 0)
-    return x - x0
+        # Prefix lengths retain the font's kerning between adjacent letters.
+        advance = text_w(f, s[:i + 1]) - text_w(f, ch) + i * track
+        d.text((x + advance, y), ch, font=f, fill=fill, anchor="ls")
+    return tracked_w(f, s, track)
 
 
 def tracked_w(f, s, track):
-    return sum(text_w(f, c) for c in s) + track * (len(s) - 1)
+    return text_w(f, s) + track * max(0, len(s) - 1)
 
 
 def fat_line(d, p1, p2, t, fill):
@@ -110,7 +110,7 @@ def draw_wordmark(d, w, h, u, title, subtitle, credits, fg=WHITE, light=LIGHT, d
     """Title, the credits line above it and the subtitle, centred as on the boot logo."""
     # ---- title
     size = 0.20 * u
-    track = 0.008 * u
+    track = 0.005 * u
     f_t = font("Roboto-Bold.ttf", size)
     tw = tracked_w(f_t, title, track)
     if tw > 0.84 * w:                      # cap title width on narrow/square screens
@@ -151,18 +151,27 @@ def draw_wordmark(d, w, h, u, title, subtitle, credits, fg=WHITE, light=LIGHT, d
                 x += text_w(f, txt)
 
     # ---- subtitle, right-aligned to title
-    f_s = font("Roboto-Light.ttf", 0.066 * u)
+    f_s = font("Roboto-Light.ttf", 0.058 * u)
     d.text((tx + tw, ty + 0.045 * u + cap_h(f_s)), subtitle, font=f_s, fill=light, anchor="rs")
     return tx, tw
 
 
-def draw_lineage(d, x, base_y, u, k, R, f_lo, f_lp, line, bg):
+def draw_lineage(d, x, base_y, u, k, R, f_lo, f_lp, line, bg, fg=LINEAGE):
     """The Lineage mark, "LineageOS" and a small line above it, left edge at x."""
     mark_cx = x + 2.1 * R
     text_x = x + 4.2 * R + 0.025 * u * k
-    lineage_mark(d, mark_cx, base_y - 0.5 * cap_h(f_lo) - 0.2 * R, R, LINEAGE, bg)
-    d.text((text_x, base_y), "LineageOS", font=f_lo, fill=LINEAGE, anchor="ls")
-    d.text((text_x, base_y - cap_h(f_lo) - 0.020 * u * k), line, font=f_lp, fill=LINEAGE, anchor="ls")
+    lineage_mark(d, mark_cx, base_y - 0.5 * cap_h(f_lo) - 0.2 * R, R, fg, bg)
+    d.text((text_x, base_y), "LineageOS", font=f_lo, fill=fg, anchor="ls")
+    d.text((text_x, base_y - cap_h(f_lo) - 0.020 * u * k), line, font=f_lp, fill=fg, anchor="ls")
+
+
+def cropped_logo(im, ss):
+    """Leave room for the downsampling filter around transparent artwork."""
+    left, top, right, bottom = im.getbbox()
+    pad = 4 * ss
+    im = im.crop((max(0, left - pad), max(0, top - pad),
+                  min(im.width, right + pad), min(im.height, bottom + pad)))
+    return im.resize((round(im.width / ss), round(im.height / ss)), Image.LANCZOS)
 
 
 def setup_wizard(out_dir, credits, ss=4):
@@ -175,27 +184,26 @@ def setup_wizard(out_dir, credits, ss=4):
                                  ("drawable-nodpi", (0x20, 0x21, 0x24), (0x3C, 0x40, 0x43), (0x70, 0x75, 0x7A))):
         im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
         draw_wordmark(ImageDraw.Draw(im), w, h, u, "andr36oid", "RK3326 Community", credits, fg, light, dim)
-        im = im.crop(im.getbbox())
-        im = im.resize((im.width // ss, im.height // ss), Image.LANCZOS)
+        im = cropped_logo(im, ss)
         os.makedirs(os.path.join(out_dir, name), exist_ok=True)
         im.save(os.path.join(out_dir, name, "andr36oid_logo.png"))
     # the lineage mark punches its rings out with the background colour: draw on
-    # black, then use the brightness as alpha so the holes are see-through
+    # black, then use a white mask as alpha so solid teal stays fully opaque
     R = 0.038 * u
     f_lo = font("Roboto-Medium.ttf", 0.070 * u)
     f_lp = font("Roboto-Regular.ttf", 0.040 * u)
     im = Image.new("RGB", (w, h), BLACK)
-    draw_lineage(ImageDraw.Draw(im), 0.1 * u, 0.5 * h, u, 1.0, R, f_lo, f_lp, "Based on", BLACK)
-    alpha = im.convert("L").point(lambda v: min(255, v * 255 // max(LINEAGE)))
+    draw_lineage(ImageDraw.Draw(im), 0.1 * u, 0.5 * h, u, 1.0, R, f_lo, f_lp,
+                 "Based on", BLACK, WHITE)
+    alpha = im.convert("L")
     teal = Image.new("RGBA", (w, h), LINEAGE + (255,))
     teal.putalpha(alpha)
-    teal = teal.crop(alpha.getbbox())
-    teal = teal.resize((teal.width // ss, teal.height // ss), Image.LANCZOS)
+    teal = cropped_logo(teal, ss)
     teal.save(os.path.join(out_dir, "drawable-nodpi", "based_on_lineageos.png"))
     print(f"wrote the setup wizard logos to {out_dir}")
 
 
-def render(W, H, title, subtitle, build="", credits="", ss=4):
+def render(W, H, title, subtitle, build="", credits="", ss=4, turn=False):
     w, h = W * ss, H * ss
     u = min(w, h)
     im = Image.new("RGB", (w, h), BLACK)
@@ -208,7 +216,13 @@ def render(W, H, title, subtitle, build="", credits="", ss=4):
     # ---- build number, top right, monospace
     if build:
         f_b = font("DejaVuSansMono.ttf", 0.036 * u)
-        d.text((w - margin, margin + cap_h(f_b)), build, font=f_b, fill=DIM, anchor="rs")
+        # U-Boot prints its version at the upper left. Keep a long label in the
+        # right half, and leave room there after rotating a sideways panel too.
+        build_margin = max(margin, 0.20 * u) if turn else margin
+        max_width = min(0.42 * w, w - build_margin - 0.52 * w)
+        if text_w(f_b, build) > max_width:
+            f_b = font("DejaVuSansMono.ttf", 0.036 * u * max_width / text_w(f_b, build))
+        d.text((w - build_margin, margin + cap_h(f_b)), build, font=f_b, fill=DIM, anchor="rs")
 
     # ---- footer blocks; shrink both if they would collide on narrow screens
     def footer(k):
@@ -264,7 +278,7 @@ def main():
         setup_wizard(a.setup_wizard, a.credits)
         return
 
-    im = render(a.width, a.height, a.title, a.subtitle, a.build, a.credits)
+    im = render(a.width, a.height, a.title, a.subtitle, a.build, a.credits, turn=a.turn)
     if a.turn:
         im = im.rotate(90, expand=True)
     im.save(a.out, "BMP")

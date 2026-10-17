@@ -224,33 +224,41 @@ def render(W, H, title, subtitle, build="", credits="", ss=4, turn=False):
             f_b = font("DejaVuSansMono.ttf", 0.036 * u * max_width / text_w(f_b, build))
         d.text((w - build_margin, margin + cap_h(f_b)), build, font=f_b, fill=DIM, anchor="rs")
 
-    # ---- footer blocks; shrink both if they would collide on narrow screens
-    def footer(k):
-        f_pb = font("Roboto-Regular.ttf", 0.040 * u * k)
-        f_an = font("Roboto-Medium.ttf", 0.080 * u * k)
+    # ---- footer blocks; keep the Lineage credit full-size on square screens
+    def footer(k, android_scale=1.0):
+        ak = k * android_scale
+        f_pb = font("Roboto-Regular.ttf", 0.040 * u * ak)
+        f_an = font("Roboto-Medium.ttf", 0.080 * u * ak)
         f_lo = font("Roboto-Medium.ttf", 0.070 * u * k)
         f_lp = font("Roboto-Regular.ttf", 0.040 * u * k)
-        head_r = 0.038 * u * k
+        head_r = 0.038 * u * ak
         R = 0.038 * u * k
-        an_block = text_w(f_an, "android") + 0.022 * u * k + 2 * head_r
+        an_block = text_w(f_an, "android") + 0.022 * u * ak + 2 * head_r
         lo_block = 4.2 * R + 0.025 * u * k + text_w(f_lo, "LineageOS")
         return f_pb, f_an, f_lo, f_lp, head_r, R, an_block, lo_block
 
     k = 1.0
+    android_scale = 1.0
     f_pb, f_an, f_lo, f_lp, head_r, R, an_block, lo_block = footer(k)
     avail = w - 2 * margin - 0.08 * u
     if an_block + lo_block > avail:
-        k = avail / (an_block + lo_block)
-        f_pb, f_an, f_lo, f_lp, head_r, R, an_block, lo_block = footer(k)
+        # A closer gap and a slightly smaller Android credit leave LineageOS at
+        # its intended size instead of shrinking both footer blocks together.
+        avail = w - 2 * margin - 0.04 * u
+        android_scale = min(1.0, max(0.75, (avail - lo_block) / an_block))
+        f_pb, f_an, f_lo, f_lp, head_r, R, an_block, lo_block = footer(k, android_scale)
+        if an_block + lo_block > avail:
+            k = avail / (an_block + lo_block)
+            f_pb, f_an, f_lo, f_lp, head_r, R, an_block, lo_block = footer(k, android_scale)
 
     base_y = h - margin
 
     # Based on android (bottom right), grey except the bugdroid
     head_cx = w - margin - head_r
-    an_x = head_cx - head_r - 0.022 * u * k - text_w(f_an, "android")
+    an_x = head_cx - head_r - 0.022 * u * k * android_scale - text_w(f_an, "android")
     bugdroid(d, head_cx, base_y - 0.004 * u, head_r, GREEN, WHITE, BLACK)
     d.text((an_x, base_y), "android", font=f_an, fill=DIM, anchor="ls")
-    d.text((an_x, base_y - cap_h(f_an) - 0.020 * u * k), "Based on", font=f_pb, fill=DIM, anchor="ls")
+    d.text((an_x, base_y - cap_h(f_an) - 0.020 * u * k * android_scale), "Based on", font=f_pb, fill=DIM, anchor="ls")
 
     # Powered by LineageOS (bottom left), Lineage teal
     draw_lineage(d, margin, base_y, u, k, R, f_lo, f_lp, "Powered by", BLACK)

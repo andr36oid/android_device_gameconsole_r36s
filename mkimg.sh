@@ -7,8 +7,10 @@ DEVICE=r36s-android
 IMGNAME=andr36oid-$DATE-$TIME-rk3326.img
 # AUTOAPK (p12): the bundled apps, FAT32, right after system. The first start moves it
 # behind userdata, the start after the apps are installed gives it to userdata
-# (common/firstresize). The image ends with it.
-AUTOAPK_START=5701009
+# (common/firstresize). The image ends with it. Starts on a 1 MiB boundary (2784 * 2048,
+# the first one after system's end at 5701008s) so userdata's f2fs segments line up with
+# the card's erase blocks; the 1425 sectors in between stay empty.
+AUTOAPK_START=5701632
 AUTOAPK_SECTORS=4194304    # 2 GiB
 AUTOAPK_END=$((AUTOAPK_START + AUTOAPK_SECTORS - 1))
 # + 8 MiB: the two placeholders and the backup GPT
@@ -84,7 +86,7 @@ truncate -s $((IMG_SECTORS * 512)) "$IMGNAME"
 # Flush only the image: a bare sync waits for every filesystem on the build host
 sync "$IMGNAME"
 
-# On the first start Android adds userdata (p6) and EASYROMS (p7) after 5701009s
+# On the first start Android adds userdata (p6) and EASYROMS (p7) from 5701632s on
 # (common/firstresize). Cards set up by the older resizer have them under the same
 # numbers, which parted gave out lowest-free-first; numbers 6 and 7 are held by
 # placeholders while vendor, metadata, misc and cache are created, and freed again.

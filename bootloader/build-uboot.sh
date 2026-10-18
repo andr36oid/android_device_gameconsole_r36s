@@ -5,8 +5,8 @@
 # Needs git, make, bc, python and an aarch64-linux-gnu cross compiler.
 # Usage: bootloader/build-uboot.sh [empty work dir]
 set -euo pipefail
-REPO=https://github.com/andr36oid/u-boot
-COMMIT=bda4d98f6cb8f2111eac6d2fe17847a937c62051
+REPO=${UBOOT_REPO:-https://github.com/andr36oid/u-boot}
+COMMIT=58ffd80564406584848eaf3f96107bb4235a747c
 OUT=$(cd "$(dirname "$0")" && pwd)
 WORK=${1:-$(mktemp -d)}
 git clone -q "$REPO" "$WORK/u-boot"

@@ -32,7 +32,7 @@ PRODUCT_NAME := lineage_r36s
 PRODUCT_DEVICE := r36s
 PRODUCT_MANUFACTURER := GameConsole
 PRODUCT_BRAND := GameConsole
-PRODUCT_MODEL := LineageOS on GameConsole R36S
+PRODUCT_MODEL := andr36oid
 
 
 PRODUCT_GMS_CLIENTID_BASE := android-rockchip

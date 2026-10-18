@@ -1,6 +1,6 @@
 #!/bin/bash
-# Convert an Android ext4 image (raw or sparse) into an EROFS image that the
-# 4.19 kernel's staging erofs driver can mount.
+# Convert an Android ext4 image (raw or sparse) into an EROFS image for the
+# kernel's fs/erofs (backported from Linux 5.4). mkimg.sh uses it for system.
 #
 #   sudo erofs/ext4-to-erofs.sh system.img system.erofs
 #
@@ -11,19 +11,18 @@
 # them). 1.7.1 (Ubuntu 24.04's package) writes broken small files from a tar
 # when compression is on: fsck.erofs finds them, so the script stops.
 #
-# Format choices, all forced by the staging driver in kernel 4.19:
-#  -Elegacy-compress  no compacted indexes and no lz4 0padding. The driver
-#                     rejects any incompat feature bit (EROFS_ALL_REQUIREMENTS 0)
-#  -C4096 (default)   4 KB physical clusters, CONFIG_EROFS_FS_CLUSTER_PAGE_LIMIT=1
-#  lz4hc level 9      same decompression cost as lz4, 5% smaller than lz4;
-#                     level 12 saves only 1 MB more and takes 2.6x as long
+# Format: the 5.4 driver reads compacted indexes and lz4 0padding (incompat bit
+# 0x1) and nothing newer, so no big pclusters (-C), ztailpacking, fragments or
+# dedupe. lz4hc level 9: same unpacking cost as lz4, 5% smaller; level 12 saves
+# only 1 MB more and takes 2.6x as long. The old staging driver (before kernel
+# 584131129) needed EROFS_COMPRESS="-zlz4hc,9 -Elegacy-compress".
 # Set EROFS_COMPRESS="" for an uncompressed image.
 set -euo pipefail
 
 src=${1:?usage: ext4-to-erofs.sh <ext4 image> <erofs out>}
 out=${2:?usage: ext4-to-erofs.sh <ext4 image> <erofs out>}
 here=$(cd "$(dirname "$0")" && pwd)
-compress=${EROFS_COMPRESS--zlz4hc,9 -Elegacy-compress}
+compress=${EROFS_COMPRESS--zlz4hc,9}
 mkfs=${MKFS_EROFS:-mkfs.erofs}
 fsck=${FSCK_EROFS:-fsck.erofs}
 export PATH=$PATH:/sbin:/usr/sbin

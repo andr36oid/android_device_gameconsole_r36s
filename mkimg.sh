@@ -14,6 +14,14 @@ AUTOAPK_END=$((AUTOAPK_START + AUTOAPK_SECTORS - 1))
 # + 8 MiB: the two placeholders and the backup GPT
 IMG_SECTORS=$((AUTOAPK_END + 1 + 16384))
 OUTDIR=${ANDROID_PRODUCT_OUT:="../../../out/target/product/r36s"}
+# system as compressed EROFS (lz4hc), read by the kernel's fs/erofs (backported from
+# Linux 5.4): about 850 MB instead of 2.2 GB of ext4, and apps start much faster from
+# a slow SD card. ANDR36OID_SYSTEM_FS=ext4 builds the old ext4 system for comparison.
+# The ramdisk's fstab has an ext4 and an erofs line for /system; the first that mounts
+# wins. mkfs.erofs/fsck.erofs: erofs-utils 1.8 or newer (MKFS_EROFS/FSCK_EROFS, else
+# /andr36oid/tooling/erofs-utils, see the README there, else PATH).
+SYSTEM_FS=${ANDR36OID_SYSTEM_FS:-erofs}
+case $SYSTEM_FS in erofs | ext4) ;; *) echo "ANDR36OID_SYSTEM_FS must be erofs or ext4"; exit 1 ;; esac
 TMPDIR=$(mktemp -d)
 # A build that stops (error, Ctrl-C, kill) leaves no half-made 3 GB image behind.
 # Only the one this run made, and never once it is finished. Full path: the
@@ -271,6 +279,47 @@ for d in "$BOOT_TMP"/Devices/*; do
     done
 done
 
+# andr36oid-build.txt on BOOT: what the flasher and the system updater need to know
+# about the image, so neither has to read system or vendor (EROFS) for it. UTF-8,
+# one key=value per line, unknown keys are ignored:
+#   format=1                       this layout; a reader that finds another number
+#                                  falls back to reading the partitions
+#   system_fs, vendor_fs           erofs or ext4
+#   ro.andr36oid.version           from system/product/build.prop
+#   ro.product.build.version.incremental   the same file
+#   ro.lineage.device, ro.product.system.device, ro.treble.enabled
+#                                  from system/build.prop
+#   vendor_first_stage_mount=1     vendor's fstab.rk30board mounts by-name/vendor
+#                                  with first_stage_mount
+#   vendor_vintf=1                 vendor has etc/vintf/manifest.xml
+# Only for the image: the flasher deletes it from the card after writing, and the
+# updater never copies it to the console's BOOT.
+build_info() {
+    local f key
+    prop() { # prop <file> <key>
+        f=$OUTDIR/$1
+        [ -f "$f" ] || die "no $f for andr36oid-build.txt"
+        grep -m1 "^$2=" "$f" || die "$2 is missing from $f"
+    }
+    echo "format=1"
+    echo "system_fs=$SYSTEM_FS"
+    echo "vendor_fs=ext4"
+    for key in ro.andr36oid.version ro.product.build.version.incremental; do
+        prop system/product/build.prop "$key"
+    done
+    for key in ro.lineage.device ro.product.system.device ro.treble.enabled; do
+        prop system/build.prop "$key"
+    done
+    f=$OUTDIR/vendor/etc/fstab.rk30board
+    grep -q "by-name/vendor" "$f" && grep -q "first_stage_mount" "$f" ||
+        die "vendor's fstab.rk30board doesn't mount vendor in the first stage"
+    echo "vendor_first_stage_mount=1"
+    grep -q "manifest" "$OUTDIR/vendor/etc/vintf/manifest.xml" || die "vendor has no vintf manifest"
+    echo "vendor_vintf=1"
+}
+build_info > "$BOOT_TMP/andr36oid-build.txt"
+echo "andr36oid-build.txt:"; sed 's/^/    /' "$BOOT_TMP/andr36oid-build.txt"
+
 if ! command -v mcopy >/dev/null 2>&1; then
     echo "mtools (mcopy) not found. Install mtools."
     exit 1
@@ -294,7 +343,7 @@ want=$(cd "$BOOT_TMP" && find . -type f | wc -l)
 have=$(mdir -/ -b -i "$BOOT_IMG" ::/ | grep -vc '/$' || true)
 [ "$want" = "$have" ] || die "BOOT has $have files, expected $want"
 for f in Image ramdisk.uimg ramdisk-stock.uimg boot.ini boot.ini-android rk3326-r36s-android.dtb \
-    Image-recovery; do
+    Image-recovery andr36oid-build.txt; do
     [ -f "$BOOT_TMP/$f" ] || die "$f is missing from the BOOT files"
     mtype -i "$BOOT_IMG" "::/$f" | cmp -s - "$BOOT_TMP/$f" || die "$f on BOOT differs from the build's"
 done
@@ -303,9 +352,10 @@ echo "BOOT: $have files checked, $(mdir -i "$BOOT_IMG" ::/ | sed -n 's/^ *\([0-9
 echo "Embedding BOOT filesystem into $IMGNAME at sector $p1_start..."
 dd if="$BOOT_IMG" of="$IMGNAME" bs=512 seek="$p1_start" conv=notrunc,fsync status=none
 
-echo "Copying system image into partition 2..."
+echo "Copying system image into partition 2 ($SYSTEM_FS)..."
 SYS_SRC="$OUTDIR/system.img"
 SYS_RAW="$TMPDIR/system.raw.img"
+SYS_EROFS="$TMPDIR/system.erofs"
 
 if [ ! -f "$SYS_SRC" ]; then
     echo "System image not found at $SYS_SRC"
@@ -315,14 +365,42 @@ fi
 if file "$SYS_SRC" | grep -qi "Android sparse image"; then
     if command -v simg2img >/dev/null 2>&1; then
         simg2img "$SYS_SRC" "$SYS_RAW"
-        dd if="$SYS_RAW" of="$IMGNAME" bs=512 seek="$p2_start" conv=notrunc,fsync status=none
     else
         echo "System image is Android sparse and simg2img is not installed."
         exit 1
     fi
 else
-    dd if="$SYS_SRC" of="$IMGNAME" bs=512 seek="$p2_start" conv=notrunc,fsync status=none
+    cp "$SYS_SRC" "$SYS_RAW"
 fi
+if [ "$SYSTEM_FS" = erofs ]; then
+    # The build makes ext4 (with Android's owners, modes, SELinux labels and file
+    # capabilities); erofs/ext4-to-erofs.sh carries all of them over unchanged.
+    # MKFS_EROFS/FSCK_EROFS, else our 1.8 copy, else PATH (often Ubuntu's 1.7.1)
+    for t in mkfs fsck; do
+        v=$(echo "$t" | tr a-z A-Z)_EROFS
+        if [ -z "${!v:-}" ]; then
+            if [ -x "/andr36oid/tooling/erofs-utils/$t.erofs" ]; then
+                printf -v "$v" %s "/andr36oid/tooling/erofs-utils/$t.erofs"
+            else
+                printf -v "$v" %s "$t.erofs"
+            fi
+        fi
+    done
+    "$MKFS_EROFS" --version 2>/dev/null | grep -Eq 'erofs-utils\) (1\.([89]|[1-9][0-9])|[2-9])' ||
+        die "$MKFS_EROFS is not erofs-utils 1.8 or newer"
+    TMPDIR=$TMPDIR MKFS_EROFS=$MKFS_EROFS FSCK_EROFS=$FSCK_EROFS \
+        erofs/ext4-to-erofs.sh "$SYS_RAW" "$SYS_EROFS" || die "could not make the EROFS system"
+    # Only lz4 with 0padding (incompat bit 0x1): the kernel's 5.4 erofs refuses
+    # anything else, and the console would not start
+    incompat=$(od -An -tu4 -j $((1024 + 80)) -N4 "$SYS_EROFS" | tr -d ' ')
+    [ "$incompat" -le 1 ] || die "the EROFS system uses features the kernel can't read ($incompat)"
+    rm -f "$SYS_RAW"
+    mv "$SYS_EROFS" "$SYS_RAW"
+fi
+if [ "$(stat -c %s "$SYS_RAW")" -gt $((p2_sectors * 512)) ]; then
+    die "the system image is larger than the system partition"
+fi
+dd if="$SYS_RAW" of="$IMGNAME" bs=512 seek="$p2_start" conv=notrunc,fsync status=none
 
 echo "Copying vendor image into the vendor partition..."
 VENDOR_SRC="$OUTDIR/vendor.img"

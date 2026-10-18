@@ -1,8 +1,8 @@
 #!/bin/bash
 # Make an EROFS test card from a release image (.img.xz or .img.zip): the same build, with system
-# (and with --vendor also vendor) turned into EROFS. For a device test of the
-# 4.19 staging erofs driver and a boot time / app start comparison against the
-# ext4 release it was made from.
+# (and with --vendor also vendor) turned into EROFS. Releases have an EROFS system
+# already (mkimg.sh); this is for images built with ANDR36OID_SYSTEM_FS=ext4 and for
+# trying vendor as EROFS. andr36oid-build.txt on BOOT is updated to match.
 #
 #   sudo erofs/erofs-test-image.sh andr36oid-...-rk3326.img.xz [--vendor]
 #
@@ -84,6 +84,14 @@ convert() {
 }
 convert system $SYS_START $SYS_END
 [ $vendor = 1 ] && convert vendor $VEN_START $VEN_END
+
+# andr36oid-build.txt (images since 2026-10-18) says which file systems the image has
+if mtype -i "$work/boot.fat" ::/andr36oid-build.txt > "$work/build.txt" 2>/dev/null; then
+    sed -i 's/^system_fs=.*/system_fs=erofs/' "$work/build.txt"
+    [ $vendor = 1 ] && sed -i 's/^vendor_fs=.*/vendor_fs=erofs/' "$work/build.txt"
+    mcopy -o -i "$work/boot.fat" "$work/build.txt" ::/andr36oid-build.txt
+    ddout "$work/boot.fat" "$img" $BOOT_START
+fi
 
 mv "$img" "$out"
 if [ $ext = xz ]; then

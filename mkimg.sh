@@ -468,10 +468,20 @@ parted -s "$IMGNAME" unit s print
 IMG_DONE=1
 echo "Done, created $IMGNAME!"
 rm -rf "$BOOT_IMG" "$BOOT_TMP" "$SYS_RAW" "$VENDOR_RAW"
-# xz -9 on every core: about 17% smaller than the old pigz .zip (1483 instead of
-# 1791 MB for build 20261017-2046) for about 3.5 minutes. -T0 writes independent
-# blocks, so xz, Etcher and our flasher can unpack them in parallel. 7-Zip opens it.
-xz -9 -T0 -c "$IMGNAME" > "$IMGNAME.xz.part" && mv "$IMGNAME.xz.part" "$IMGNAME.xz" ||
-    { rm -f "$IMGNAME.xz.part"; die "xz could not pack $IMGNAME"; }
-sha256sum "$IMGNAME.xz" > "$IMGNAME.xz.sha256"
-echo "Packaged $IMGNAME.xz"
+# ANDR36OID_PACK=xz (default, releases): xz -9 on every core, about 17% smaller than
+# the old pigz .zip (1483 instead of 1791 MB for build 20261017-2046) for about 3.5
+# minutes. -T0 writes independent blocks, so xz, Etcher and our flasher can unpack
+# them in parallel. 7-Zip opens it.
+# ANDR36OID_PACK=gz (test builds): pigz, seconds instead of minutes. gzip only keeps
+# the size modulo 4 GiB, so the real one goes next to it in .img.gz.size for the
+# flasher's progress bar.
+case ${ANDR36OID_PACK:-xz} in
+    xz) EXT=xz; PACK="xz -9 -T0 -c" ;;
+    gz) EXT=gz; PACK="pigz -c" ;;
+    *) die "ANDR36OID_PACK must be xz or gz, not $ANDR36OID_PACK" ;;
+esac
+$PACK "$IMGNAME" > "$IMGNAME.$EXT.part" && mv "$IMGNAME.$EXT.part" "$IMGNAME.$EXT" ||
+    { rm -f "$IMGNAME.$EXT.part"; die "$EXT could not pack $IMGNAME"; }
+[ "$EXT" = gz ] && stat -c %s "$IMGNAME" > "$IMGNAME.gz.size"
+sha256sum "$IMGNAME.$EXT" > "$IMGNAME.$EXT.sha256"
+echo "Packaged $IMGNAME.$EXT"

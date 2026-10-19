@@ -472,12 +472,13 @@ rm -rf "$BOOT_IMG" "$BOOT_TMP" "$SYS_RAW" "$VENDOR_RAW"
 # the old pigz .zip (1483 instead of 1791 MB for build 20261017-2046) for about 3.5
 # minutes. -T0 writes independent blocks, so xz, Etcher and our flasher can unpack
 # them in parallel. 7-Zip opens it.
-# ANDR36OID_PACK=gz (test builds): pigz, seconds instead of minutes. gzip only keeps
+# ANDR36OID_PACK=gz (test builds): pigz -1, seconds instead of minutes (EROFS is
+# compressed already, so -1 is nearly as small). gzip only keeps
 # the size modulo 4 GiB, so the real one goes next to it in .img.gz.size for the
 # flasher's progress bar.
 case ${ANDR36OID_PACK:-xz} in
     xz) EXT=xz; PACK="xz -9 -T0 -c" ;;
-    gz) EXT=gz; PACK="pigz -c" ;;
+    gz) EXT=gz; PACK="pigz -1 -c" ;;
     *) die "ANDR36OID_PACK must be xz or gz, not $ANDR36OID_PACK" ;;
 esac
 $PACK "$IMGNAME" > "$IMGNAME.$EXT.part" && mv "$IMGNAME.$EXT.part" "$IMGNAME.$EXT" ||

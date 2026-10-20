@@ -92,6 +92,31 @@ if test "${hwrev}" = "rg351v"; then
     mw.l 0xff14008c 0x00030001
     if gpio input d24; then setenv go_bootlog yes; fi
 fi
+# Safe start: Start held together with Select starts without the Kernel Tweaks start
+# options and without Magisk (ramdisk-stock.uimg), a way back from a tweak or a Magisk
+# module that stops the console from starting, also where kernel-tweaks.txt can't be
+# reached from a PC (an install on the built-in eMMC). It replaces the boot log.
+#   rg351mp: Start = GPIO3_B4 (d12), GRF_GPIO3B_P bits 8-9
+#   rg351v:  Start = GPIO3_D1 (d25), GRF_GPIO3D_P bits 2-3
+setenv go_safe no
+if test "${go_bootlog}" = "yes"; then
+    if test "${hwrev}" = "rg351mp"; then
+        mw.l 0xff140084 0x03000100
+        if gpio input d12; then setenv go_safe yes; fi
+    fi
+    if test "${hwrev}" = "rg351v"; then
+        mw.l 0xff14008c 0x000c0004
+        if gpio input d25; then setenv go_safe yes; fi
+    fi
+fi
+if test "${go_safe}" = "yes"; then
+    setenv go_bootlog no
+    lcd setfg white
+    lcd setline 10
+    lcd putstr "  Start+Select held: safe start,"
+    lcd setline 11
+    lcd putstr "  no Kernel Tweaks, no Magisk"
+fi
 if test "${go_bootlog}" = "yes"; then
     setenv bootlog_args "console=tty0 loglevel=8 ignore_loglevel printk.devkmsg=on panic=0 androidboot.init_fatal_panic=true"
     lcd setfg white
@@ -117,11 +142,18 @@ else
     # Android). They come last, so they win over the same options above. Recovery
     # starts without them.
     setenv kt_args ""
-    if load mmc 1:1 ${ramdisk_addr_r} kernel-tweaks.txt; then
-        env import -t -r ${ramdisk_addr_r} ${filesize}
+    if test "${go_safe}" = "no"; then
+        if load mmc 1:1 ${ramdisk_addr_r} kernel-tweaks.txt; then
+            env import -t -r ${ramdisk_addr_r} ${filesize}
+        fi
     fi
-    # A legacy uImage: this U-Boot has no raw initrd support (addr:size)
-    load mmc 1:1 ${ramdisk_addr_r} ramdisk.uimg
+    # A legacy uImage: this U-Boot has no raw initrd support (addr:size).
+    # ramdisk.uimg has Magisk in it, ramdisk-stock.uimg is the same without.
+    if test "${go_safe}" = "yes"; then
+        load mmc 1:1 ${ramdisk_addr_r} ramdisk-stock.uimg
+    else
+        load mmc 1:1 ${ramdisk_addr_r} ramdisk.uimg
+    fi
     setenv bootargs "${bootrootfs} ${android} ${android2} ${console} ${kt_args} ${bootlog_args}"
     booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
 fi

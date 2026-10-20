@@ -6,7 +6,7 @@
 # Usage: bootloader/build-uboot.sh [empty work dir]
 set -euo pipefail
 REPO=${UBOOT_REPO:-https://github.com/andr36oid/u-boot}
-COMMIT=549fc2e605df9bf9746a2574082451bbfdb8eb5d
+COMMIT=976c730ec9a299bd8993973dae6affe14b2fee31
 OUT=$(cd "$(dirname "$0")" && pwd)
 WORK=${1:-$(mktemp -d)}
 git clone -q "$REPO" "$WORK/u-boot"

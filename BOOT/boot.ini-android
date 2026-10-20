@@ -1,11 +1,17 @@
 odroidgoa-uboot-config
 
+# Where BOOT is: the SD card's (mmc 1:1), or for andr36oid installed on the built-in
+# eMMC (Settings > System > eMMC Installation) the eMMC's (mmc 0:1). U-Boot says which
+# it started from in andr36oid_part; older ones only start from the SD card.
+setenv bootpart 1:1
+if test "${andr36oid_part}" = "0:1"; then setenv bootpart 0:1; fi
+
 # Clones: light the status LED right away instead of a few seconds later when the
 # kernel gets to it. The DTB brings the U-Boot commands for its board (andr36oid,u-boot
 # in the status LED node); the genuine R36S has none, its green LED is on by itself.
 # The kernel keeps the light like this until the battery driver is up.
 setenv fdt_addr_r "0x01f00000"
-if load mmc 1:1 ${fdt_addr_r} rk3326-r36s-android.dtb; then
+if load mmc ${bootpart} ${fdt_addr_r} rk3326-r36s-android.dtb; then
     fdt addr ${fdt_addr_r}
     if fdt get value status_led /andr36oid-status-led andr36oid,u-boot; then
         run status_led
@@ -50,7 +56,13 @@ setenv console "console=null loglevel=4 printk.time=1 vt.global_cursor_default=0
 
 setenv android "firmware_class.path=/vendor/firmware androidboot.hardware=rk30board androidboot.selinux=permissive androidboot.verifiedbootstate=green"
 
-setenv android2 "androidboot.revision=${hwrev} androidboot.serialno=${serial#} androidboot.boot_devices=ff370000.dwmmc"
+setenv android2 "androidboot.revision=${hwrev} androidboot.serialno=${serial#}"
+
+# The controller Android takes its partitions from (system, userdata, ...): the SD card's.
+# An install on the eMMC also tells the kernel to use the eMMC as its system disk
+# (writable but for its bootloader area, see dw_mmc-rockchip.c) and Android its fstab.
+setenv bootdevs "androidboot.boot_devices=ff370000.dwmmc"
+setenv emmc_args ""
 
 # Set load addresses
 setenv kernel_addr_r "0x02000000"
@@ -117,6 +129,37 @@ if test "${go_safe}" = "yes"; then
     lcd setline 11
     lcd putstr "  no Kernel Tweaks, no Magisk"
 fi
+# eMMC Installation, step 2: emmc-test.txt on the SD card's BOOT starts andr36oid from
+# the built-in eMMC, kernel and all, to prove it starts; that system deletes the file.
+# If it doesn't start, Select held at power-on (boot log or safe start) starts from the
+# SD card as usual. The eMMC's pins are switched over first (GRF iomux and pulls for
+# GPIO1_A0-A7, B1 and B2), as U-Boot does when it starts from the eMMC itself.
+if test "${bootpart}" = "1:1"; then
+    if test -e mmc 1:1 emmc-test.txt; then
+        if test "${go_bootlog}${go_safe}" = "nono"; then
+            mw.l 0xff140000 0xffff2222
+            mw.l 0xff140004 0xffff2222
+            mw.l 0xff140008 0x0ff00220
+            mw.l 0xff140060 0xffff5555
+            mw.l 0xff140064 0x003c0010
+            lcd setfg white
+            lcd setline 10
+            if test -e mmc 0:1 boot.ini; then
+                setenv bootpart 0:1
+                load mmc 0:1 ${fdt_addr_r} rk3326-r36s-android.dtb
+                lcd putstr "  eMMC test: starting from the eMMC"
+                lcd setline 11
+                lcd putstr "  (hold Select to start from SD)"
+            else
+                lcd putstr "  eMMC test: eMMC not readable here"
+            fi
+        fi
+    fi
+fi
+if test "${bootpart}" = "0:1"; then
+    setenv bootdevs "androidboot.boot_devices=ff390000.dwmmc"
+    setenv emmc_args "dw_mmc_rockchip.builtin_emmc=system androidboot.fstab_suffix=emmc"
+fi
 if test "${go_bootlog}" = "yes"; then
     setenv bootlog_args "console=tty0 loglevel=8 ignore_loglevel printk.devkmsg=on panic=0 androidboot.init_fatal_panic=true"
     lcd setfg white
@@ -130,30 +173,34 @@ fi
 if test -e mmc 1:1 recovery.txt; then setenv go_recovery yes; fi
 if test -e mmc 1:1 recovery.txt.txt; then setenv go_recovery yes; fi
 
+# The recovery kernel can't see the eMMC: recovery needs the SD card
+if test "${bootpart}" = "0:1"; then setenv go_recovery no; fi
+
 if test "${go_recovery}" = "yes"
 then
     # The recovery kernel carries its own ramdisk
     load mmc 1:1 ${kernel_addr_r} Image-recovery
-    setenv bootargs "root=/dev/mmcblk0p2 rootfstype=ext4 init=/init ${bootrootfs} ${android} ${android2} ${console}"
+    setenv bootargs "root=/dev/mmcblk0p2 rootfstype=ext4 init=/init ${bootrootfs} ${android} ${android2} ${bootdevs} ${console}"
     booti ${kernel_addr_r} - ${fdt_addr_r}
 else
-    load mmc 1:1 ${kernel_addr_r} Image
+    load mmc ${bootpart} ${kernel_addr_r} Image
     # Kernel Tweaks options that take effect at a start (kt_args=..., written by
     # Android). They come last, so they win over the same options above. Recovery
     # starts without them.
     setenv kt_args ""
     if test "${go_safe}" = "no"; then
-        if load mmc 1:1 ${ramdisk_addr_r} kernel-tweaks.txt; then
+        if load mmc ${bootpart} ${ramdisk_addr_r} kernel-tweaks.txt; then
             env import -t -r ${ramdisk_addr_r} ${filesize}
         fi
     fi
     # A legacy uImage: this U-Boot has no raw initrd support (addr:size).
     # ramdisk.uimg has Magisk in it, ramdisk-stock.uimg is the same without.
     if test "${go_safe}" = "yes"; then
-        load mmc 1:1 ${ramdisk_addr_r} ramdisk-stock.uimg
+        load mmc ${bootpart} ${ramdisk_addr_r} ramdisk-stock.uimg
     else
-        load mmc 1:1 ${ramdisk_addr_r} ramdisk.uimg
+        load mmc ${bootpart} ${ramdisk_addr_r} ramdisk.uimg
     fi
-    setenv bootargs "${bootrootfs} ${android} ${android2} ${console} ${kt_args} ${bootlog_args}"
+    # emmc_args after the tweaks: kernel-tweaks.txt can't switch an eMMC install's eMMC off
+    setenv bootargs "${bootrootfs} ${android} ${android2} ${bootdevs} ${console} ${kt_args} ${emmc_args} ${bootlog_args}"
     booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
 fi

@@ -129,31 +129,50 @@ if test "${go_safe}" = "yes"; then
     lcd setline 11
     lcd putstr "  no Kernel Tweaks, no Magisk"
 fi
-# eMMC Installation, step 2: emmc-test.txt on the SD card's BOOT starts andr36oid from
-# the built-in eMMC, kernel and all, to prove it starts; that system deletes the file.
-# If it doesn't start, Select held at power-on (boot log or safe start) starts from the
-# SD card as usual. The eMMC's pins are switched over first (GRF iomux and pulls for
-# GPIO1_A0-A7, B1 and B2), as U-Boot does when it starts from the eMMC itself.
+# eMMC Installation, step 2: starts andr36oid on the built-in eMMC once, kernel and all,
+# to prove it starts, before its bootloader goes on the eMMC. The installer leaves
+# emmc-test.txt on the SD card's BOOT with emmc_test=start. U-Boot marks it tried
+# (fatwrite over the same small file, read back) before starting from the eMMC, so a
+# test that hangs is followed by a normal SD start; the eMMC system sets it to ok
+# once it is up. Select or Start+Select held leaves the test for a later start. The
+# eMMC's pins are switched over first (GRF iomux and pulls for GPIO1_A0-A7, B1 and
+# B2), as U-Boot does when it starts from the eMMC itself.
+setenv emmc_test ""
 if test "${bootpart}" = "1:1"; then
-    if test -e mmc 1:1 emmc-test.txt; then
-        if test "${go_bootlog}${go_safe}" = "nono"; then
-            mw.l 0xff140000 0xffff2222
-            mw.l 0xff140004 0xffff2222
-            mw.l 0xff140008 0x0ff00220
-            mw.l 0xff140060 0xffff5555
-            mw.l 0xff140064 0x003c0010
-            lcd setfg white
-            lcd setline 10
-            if test -e mmc 0:1 boot.ini; then
+    if load mmc 1:1 ${ramdisk_addr_r} emmc-test.txt; then
+        env import -t ${ramdisk_addr_r} ${filesize}
+    fi
+fi
+if test "${emmc_test}${go_bootlog}${go_safe}" = "startnono"; then
+    lcd setfg white
+    lcd setline 10
+    setenv emmc_test tried
+    env export -t ${ramdisk_addr_r} emmc_test
+    setenv emmc_test ""
+    if fatwrite mmc 1:1 ${ramdisk_addr_r} emmc-test.txt ${filesize}; then
+        if load mmc 1:1 ${ramdisk_addr_r} emmc-test.txt; then
+            env import -t ${ramdisk_addr_r} ${filesize}
+        fi
+    fi
+    if test "${emmc_test}" = "tried"; then
+        mw.l 0xff140000 0xffff2222
+        mw.l 0xff140004 0xffff2222
+        mw.l 0xff140008 0x0ff00220
+        mw.l 0xff140060 0xffff5555
+        mw.l 0xff140064 0x003c0010
+        if test -e mmc 0:1 boot.ini; then
+            if load mmc 0:1 ${fdt_addr_r} rk3326-r36s-android.dtb; then
                 setenv bootpart 0:1
-                load mmc 0:1 ${fdt_addr_r} rk3326-r36s-android.dtb
                 lcd putstr "  eMMC test: starting from the eMMC"
-                lcd setline 11
-                lcd putstr "  (hold Select to start from SD)"
-            else
-                lcd putstr "  eMMC test: eMMC not readable here"
             fi
         fi
+        if test "${bootpart}" = "1:1"; then
+            lcd putstr "  eMMC test: eMMC not readable here"
+            # the SD card's DTB again, the eMMC one may be half loaded
+            load mmc 1:1 ${fdt_addr_r} rk3326-r36s-android.dtb
+        fi
+    else
+        lcd putstr "  eMMC test: emmc-test.txt not writable"
     fi
 fi
 if test "${bootpart}" = "0:1"; then

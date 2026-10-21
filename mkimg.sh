@@ -1,9 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-DATE=$(date -u +%Y%m%d)
-TIME=$(date -u +%H%M)
 DEVICE=r36s-android
+OUTDIR=${ANDROID_PRODUCT_OUT:="../../../out/target/product/r36s"}
+# The name's date and time are system's build time (ro.build.date.utc), which Settings >
+# About console shows as the build, so the console says which image it runs.
+BUILT=$(sed -n 's/^ro.build.date.utc=//p' "$OUTDIR/system/build.prop" 2>/dev/null || true)
+BUILT=${BUILT:-$(date -u +%s)}
+DATE=$(date -u -d "@$BUILT" +%Y%m%d)
+TIME=$(date -u -d "@$BUILT" +%H%M)
 IMGNAME=andr36oid-$DATE-$TIME-rk3326.img
 # AUTOAPK (p12): the bundled apps, FAT32, right after system. The first start moves it
 # behind userdata, the start after the apps are installed gives it to userdata
@@ -15,7 +20,6 @@ AUTOAPK_SECTORS=4194304    # 2 GiB
 AUTOAPK_END=$((AUTOAPK_START + AUTOAPK_SECTORS - 1))
 # + 8 MiB: the two placeholders and the backup GPT
 IMG_SECTORS=$((AUTOAPK_END + 1 + 16384))
-OUTDIR=${ANDROID_PRODUCT_OUT:="../../../out/target/product/r36s"}
 # system as compressed EROFS (lz4hc), read by the kernel's fs/erofs (backported from
 # Linux 5.4): about 850 MB instead of 2.2 GB of ext4, and apps start much faster from
 # a slow SD card. ANDR36OID_SYSTEM_FS=ext4 builds the old ext4 system for comparison.

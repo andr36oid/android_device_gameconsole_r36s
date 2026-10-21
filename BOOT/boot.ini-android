@@ -178,6 +178,16 @@ fi
 if test "${bootpart}" = "0:1"; then
     setenv bootdevs "androidboot.boot_devices=ff390000.dwmmc"
     setenv emmc_args "dw_mmc_rockchip.builtin_emmc=system androidboot.fstab_suffix=emmc"
+    # Android's data on an SD card (the eMMC installer's data card): datacard.txt
+    # names its userdata partition (GPT unique GUID). Android waits for that card in
+    # either slot before it mounts /data (andr36oid-datacard), with its own fstab.
+    setenv datacard ""
+    if load mmc 0:1 ${ramdisk_addr_r} datacard.txt; then
+        env import -t -r ${ramdisk_addr_r} ${filesize}
+    fi
+    if test -n "${datacard}"; then
+        setenv emmc_args "dw_mmc_rockchip.builtin_emmc=system androidboot.fstab_suffix=emmcsd androidboot.datacard=${datacard}"
+    fi
 fi
 if test "${go_bootlog}" = "yes"; then
     setenv bootlog_args "console=tty0 loglevel=8 ignore_loglevel printk.devkmsg=on panic=0 androidboot.init_fatal_panic=true"

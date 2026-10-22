@@ -209,6 +209,11 @@ then
     # it from starting; emmc_args tell it an eMMC install and its data card.
     load mmc ${bootpart} ${kernel_addr_r} Image
     load mmc ${bootpart} ${ramdisk_addr_r} ramdisk-recovery.uimg
+    # started from the SD card: the eMMC tools need to see the built-in eMMC
+    # (read-only; the kernel leaves it off where its pins are used otherwise)
+    if test "${bootpart}" = "1:1"; then
+        setenv emmc_args "dw_mmc_rockchip.builtin_emmc=1"
+    fi
     setenv bootargs "${bootrootfs} ${android} ${android2} ${bootdevs} ${console} ${emmc_args} ${bootlog_args}"
     booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
 else

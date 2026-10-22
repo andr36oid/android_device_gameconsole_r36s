@@ -1,0 +1,51 @@
+# Device profiles on this card, for the andr36oid SD flasher. One line per profile:
+#   folder|console|name|flags
+# console groups the list in the flasher, name is what it shows. flags, comma separated:
+#   experimental        the flasher asks before using it
+#   also=<console>;...  listed under those consoles too
+# mkimg.sh checks that every profile folder has a line here.
+Panels/Panel0|R36S|R36S — Panel 0|
+Panels/Panel1|R36S|R36S — Panel 1|
+Panels/Panel2|R36S|R36S — Panel 2|
+Panels/Panel3|R36S|R36S — Panel 3|
+Panels/Panel4|R36S|R36S — Panel 4|
+Panels/Panel5|R36S|R36S — Panel 5|
+Panels/Panel6|R36S|R36S — Panel 6|
+Panels/R36S-Plus|R36S Plus|R36S Plus — 720 × 720|
+Devices/D-28S|D-28S|Diium D-28S|
+Devices/G350|G350|BatleXP G350|
+Devices/R46H|R46H|R46H|
+Devices/R50S|R50S|R50S|
+Experimental/R36S-V22|R36S|R36S V22|experimental
+Experimental/R36S-V21|R36S|R36S V21|experimental
+Experimental/R36S-V21-2551-2552|R36S|R36S V21 — Batches 2551/2552|experimental
+Experimental/R36S-Y02-Y07|R36S|R36S Y02 / RG36S Y07|experimental
+Experimental/R36S-V30|R36S|R36S V30|experimental
+Experimental/R36S-V30-2603|R36S|R36S V30 — Batch 2603|experimental
+Experimental/R36S-Panel3-Alt|R36S|R36S — Panel 3 (alternate timings)|experimental
+Experimental/EE-G80-Panel8|G80|G80C / G80CA / G80D / R36S V12 wired like the G80 — Panel 8|experimental,also=R36S V12 clone
+Experimental/EE-G80-Panel9|G80|G80CA — Panel 9|experimental
+Experimental/EE-K36-Panel1|K36 / HG36|K36 / HG36 / L35 / R36 Pro / ANS11 — Panel 1|experimental
+Experimental/Kinhank-K36|K36 / HG36|Kinhank K36|experimental
+Experimental/EE-K36-Panel4|K36 / HG36|K36 / RX6S — Panel 4|experimental
+Experimental/RX6H|RX6H|RX6H|experimental
+Experimental/EE-V12-Var1-Panel8|R36S V12 clone|R36S V12 clone — Variant 1, Panel 8|
+Experimental/EE-V12-Var2|R36S V12 clone|R36S V12 clone — Variant 2|experimental
+Experimental/EE-V12-Var3-Panel3|R36S V12 clone|R36S V12 clone — Variant 3, Panel 3|experimental
+Experimental/EE-V12-Var3-PanelA|R36S V12 clone|R36S V12 clone — Variant 3, Panel A|experimental
+Experimental/K36S|K36S|K36S|experimental
+Experimental/R36T|R36T|R36T|experimental
+Experimental/XF35H|XF35H|XF35H|experimental
+Experimental/R36-Ultra|R36 Ultra|R36 Ultra / GR36 — 720 × 720|experimental
+Experimental/R36-Max|R36 Max|R36 Max — 720 × 720|experimental
+Experimental/S600|S600|S600|experimental
+Experimental/R39-Max|R39 Max|R39 Max / H50 Pro / T16 Max V2 / ANS13 — 720 × 720|experimental
+Experimental/T16-Max|T16 Max|T16 Max — First revision, 720 × 720|experimental
+Experimental/XF40H|XF40H|XF40H|experimental
+Experimental/Soy-Panel5|Soy Sauce|Soy Sauce — Panel 5|experimental
+Experimental/Soy-Panel5-253x|Soy Sauce|Soy Sauce — Panel 5, Batch 253x|experimental
+Experimental/Soy-Panel6|Soy Sauce|Soy Sauce — Panel 6|experimental
+Experimental/Soy-Panel7|Soy Sauce|Soy Sauce — Panel 7|experimental
+Experimental/Soy-Panel7-253x|Soy Sauce|Soy Sauce — Panel 7, Batch 253x|experimental
+Experimental/Soy-V04-Panel2|Soy Sauce|Soy Sauce Y3506 V04 — Panel 2|experimental
+Experimental/Soy-V05-2601|Soy Sauce|Soy Sauce Y3506 V05 — Batch 2601|experimental

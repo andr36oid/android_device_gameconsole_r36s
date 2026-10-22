@@ -244,6 +244,13 @@ grep -v '^#' experimental-dtbs/list.txt | while read -r name folder size; do
     [ "$size" = 720x720 ] || continue
     cp "$BOOT_TMP/Panels/R36S-Plus/logo.bmp" "$BOOT_TMP/Panels/R36S-Plus/logo_kernel.bmp" "$BOOT_TMP/Experimental/$folder/"
 done
+# The flasher names the profiles from andr36oid-profiles.txt: every folder needs its line
+for d in "$BOOT_TMP"/Panels/*/ "$BOOT_TMP"/Devices/*/ "$BOOT_TMP"/Experimental/*/; do
+    [ -f "$d/rk3326-r36s-android.dtb" ] || continue
+    d=${d%/}
+    d=${d#"$BOOT_TMP"/}
+    grep -q "^$d|" "$BOOT_TMP/andr36oid-profiles.txt" || die "$d has no line in BOOT/andr36oid-profiles.txt"
+done
 # Charge screen: U-Boot shows battery_*.bmp from the root while the console is
 # off and plugged in. They must match the screen width, so the 720x720 folders
 # and the other consoles get their own set. Without Pillow the screen stays black as before.

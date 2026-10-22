@@ -67,7 +67,6 @@ need_cp() { # need_cp <from> <to>
 
 echo "Copying over kernel files"
 need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/Image" BOOT/
-need_cp ./Image-recovery BOOT/
 need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel0.dtb" BOOT/Panels/Panel0/rk3326-r36s-android.dtb
 need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel1.dtb" BOOT/Panels/Panel1/rk3326-r36s-android.dtb
 need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-$DEVICE-panel2.dtb" BOOT/Panels/Panel2/rk3326-r36s-android.dtb
@@ -204,6 +203,10 @@ if [ ! -x "$MKIMAGE" ]; then
 fi
 "$MKIMAGE" -A arm64 -O linux -T ramdisk -C none -n "andr36oid stock ramdisk" \
     -d "$RAMDISK_SRC" "$BOOT_TMP/ramdisk-stock.uimg" >/dev/null
+# Recovery: the recovery ramdisk, started with Android's kernel (boot.ini)
+[ -f "$OUTDIR/ramdisk-recovery.img" ] || { echo "No recovery ramdisk at $OUTDIR/ramdisk-recovery.img"; exit 1; }
+"$MKIMAGE" -A arm64 -O linux -T ramdisk -C none -n "andr36oid recovery" \
+    -d "$OUTDIR/ramdisk-recovery.img" "$BOOT_TMP/ramdisk-recovery.uimg" >/dev/null
 MAGISK_APK=../common/magisk/Magisk.apk
 if [ -f "$MAGISK_APK" ] && [ "$(head -c 2 "$MAGISK_APK")" = "PK" ]; then
     bash ../common/magisk/inject_magisk.sh --ramdisk "$RAMDISK_SRC" \
@@ -349,7 +352,7 @@ want=$(cd "$BOOT_TMP" && find . -type f | wc -l)
 have=$(mdir -/ -b -i "$BOOT_IMG" ::/ | grep -vc '/$' || true)
 [ "$want" = "$have" ] || die "BOOT has $have files, expected $want"
 for f in Image ramdisk.uimg ramdisk-stock.uimg boot.ini boot.ini-android rk3326-r36s-android.dtb \
-    Image-recovery andr36oid-build.txt; do
+    ramdisk-recovery.uimg andr36oid-build.txt; do
     [ -f "$BOOT_TMP/$f" ] || die "$f is missing from the BOOT files"
     mtype -i "$BOOT_IMG" "::/$f" | cmp -s - "$BOOT_TMP/$f" || die "$f on BOOT differs from the build's"
 done

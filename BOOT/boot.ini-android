@@ -199,18 +199,18 @@ fi
 # recovery.txt works on every board. U-Boot can't delete files, so every start
 # goes into recovery until it is deleted on a PC. recovery.txt.txt is what
 # Windows makes when it hides file extensions.
-if test -e mmc 1:1 recovery.txt; then setenv go_recovery yes; fi
-if test -e mmc 1:1 recovery.txt.txt; then setenv go_recovery yes; fi
-
-# The recovery kernel can't see the eMMC: recovery needs the SD card
-if test "${bootpart}" = "0:1"; then setenv go_recovery no; fi
+if test -e mmc ${bootpart} recovery.txt; then setenv go_recovery yes; fi
+if test -e mmc ${bootpart} recovery.txt.txt; then setenv go_recovery yes; fi
 
 if test "${go_recovery}" = "yes"
 then
-    # The recovery kernel carries its own ramdisk
-    load mmc 1:1 ${kernel_addr_r} Image-recovery
-    setenv bootargs "root=/dev/mmcblk0p2 rootfstype=ext4 init=/init ${bootrootfs} ${android} ${android2} ${bootdevs} ${console}"
-    booti ${kernel_addr_r} - ${fdt_addr_r}
+    # andr36oid's recovery: Android's kernel with the recovery ramdisk, from the SD card
+    # or the eMMC, whichever started. Without Kernel Tweaks, so a bad tweak can't keep
+    # it from starting; emmc_args tell it an eMMC install and its data card.
+    load mmc ${bootpart} ${kernel_addr_r} Image
+    load mmc ${bootpart} ${ramdisk_addr_r} ramdisk-recovery.uimg
+    setenv bootargs "${bootrootfs} ${android} ${android2} ${bootdevs} ${console} ${emmc_args} ${bootlog_args}"
+    booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
 else
     load mmc ${bootpart} ${kernel_addr_r} Image
     # Kernel Tweaks options that take effect at a start (kt_args=..., written by

@@ -1,36 +1,36 @@
 # Experimental clone DTBs: kernel DTB name (rk3326-r36s-clone-<name>.dtb),
-# the folder under BOOT/Experimental/ it goes to, and 720x720 for boards
+# the folder under BOOT/ it goes to (Experimental/... until a board is proven), and 720x720 for boards
 # that need the square boot logo. mkimg.sh reads this file.
-v22                     R36S-V22
-v21                     R36S-V21
-v21-usbhost             R36S-V21-2551-2552
-y02                     R36S-Y02-Y07
-v30                     R36S-V30
-v30-2603                R36S-V30-2603
-panel3-alt              R36S-Panel3-Alt
-g80-panel8              EE-G80-Panel8
-g80-panel9              EE-G80-Panel9
-k36-panel1              EE-K36-Panel1
-kinhank-k36             Kinhank-K36
-k36-panel4              EE-K36-Panel4
-rx6h                    RX6H
-v12-var1-panel8         EE-V12-Var1-Panel8
-v12-var2                EE-V12-Var2
-v12-var3-panel3         EE-V12-Var3-Panel3
-v12-var3-panela         EE-V12-Var3-PanelA
-k36s                    K36S
-r36t                    R36T
-xf35h                   XF35H
-r36ultra                R36-Ultra               720x720
-r36max                  R36-Max                 720x720
-s600                    S600                    720x720
-r39max                  R39-Max                 720x720
-t16max                  T16-Max                 720x720
-xf40h                   XF40H                   720x720
-soysauce-panel5         Soy-Panel5
-soysauce-panel5-253x    Soy-Panel5-253x
-soysauce-panel6         Soy-Panel6
-soysauce-panel7         Soy-Panel7
-soysauce-panel7-253x    Soy-Panel7-253x
-soysauce-v04-panel2     Soy-V04-Panel2
-soysauce-v05-2601       Soy-V05-2601
+v22                     Experimental/R36S-V22
+v21                     Experimental/R36S-V21
+v21-usbhost             Experimental/R36S-V21-2551-2552
+y02                     Experimental/R36S-Y02-Y07
+v30                     Experimental/R36S-V30
+v30-2603                Experimental/R36S-V30-2603
+panel3-alt              Experimental/R36S-Panel3-Alt
+g80-panel8              Devices/EE-G80-Panel8
+g80-panel9              Experimental/EE-G80-Panel9
+k36-panel1              Experimental/EE-K36-Panel1
+kinhank-k36             Experimental/Kinhank-K36
+k36-panel4              Experimental/EE-K36-Panel4
+rx6h                    Experimental/RX6H
+v12-var1-panel8         Experimental/EE-V12-Var1-Panel8
+v12-var2                Experimental/EE-V12-Var2
+v12-var3-panel3         Experimental/EE-V12-Var3-Panel3
+v12-var3-panela         Experimental/EE-V12-Var3-PanelA
+k36s                    Experimental/K36S
+r36t                    Experimental/R36T
+xf35h                   Experimental/XF35H
+r36ultra                Experimental/R36-Ultra               720x720
+r36max                  Experimental/R36-Max                 720x720
+s600                    Experimental/S600                    720x720
+r39max                  Experimental/R39-Max                 720x720
+t16max                  Experimental/T16-Max                 720x720
+xf40h                   Experimental/XF40H                   720x720
+soysauce-panel5         Experimental/Soy-Panel5
+soysauce-panel5-253x    Experimental/Soy-Panel5-253x
+soysauce-panel6         Experimental/Soy-Panel6
+soysauce-panel7         Experimental/Soy-Panel7
+soysauce-panel7-253x    Experimental/Soy-Panel7-253x
+soysauce-v04-panel2     Experimental/Soy-V04-Panel2
+soysauce-v05-2601       Experimental/Soy-V05-2601

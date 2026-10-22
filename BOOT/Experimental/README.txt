@@ -56,8 +56,9 @@ Genuine R36S wiring, only the screen differs:
 "EE" clones (ship with EmuELEC, volume keys on one ADC pin), 640x480:
   EE-G80-Panel8       G80C / G80CA / G80D, panel 8, and R36S-V12 clones
                       wired like the G80 (try this one first on a V12). Fully
-                      working on the G80C, not experimental any more: it only
-                      lives here.
+                      working on the G80C: it moved to Devices/EE-G80-Panel8.
+                      This copy stays for older flashers and cards set up
+                      before the move.
   EE-G80-Panel9       G80CA, panel 9
   EE-K36-Panel1       K36 / HG36 / L35 / R36 Pro / ANS11 / "R36S Panel 1"
                       (tested on an L35: screen, buttons, sticks)

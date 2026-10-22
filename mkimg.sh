@@ -80,7 +80,7 @@ need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-r36splus-and
 # (a failed copy inside the loop ends the pipeline with an error: set -e + pipefail)
 grep -v '^#' experimental-dtbs/list.txt | while read -r name folder _; do
     [ -n "$name" ] || continue
-    need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-r36s-clone-$name.dtb" "BOOT/Experimental/$folder/rk3326-r36s-android.dtb"
+    need_cp "$OUTDIR/obj/KERNEL_OBJ/arch/arm64/boot/dts/rockchip/rk3326-r36s-clone-$name.dtb" "BOOT/$folder/rk3326-r36s-android.dtb"
 done
 
 echo "Creating image file $IMGNAME..."
@@ -246,7 +246,7 @@ done
 # The experimental boards with a 720x720 screen get the same logo
 grep -v '^#' experimental-dtbs/list.txt | while read -r name folder size; do
     [ "$size" = 720x720 ] || continue
-    cp "$BOOT_TMP/Panels/R36S-Plus/logo.bmp" "$BOOT_TMP/Panels/R36S-Plus/logo_kernel.bmp" "$BOOT_TMP/Experimental/$folder/"
+    cp "$BOOT_TMP/Panels/R36S-Plus/logo.bmp" "$BOOT_TMP/Panels/R36S-Plus/logo_kernel.bmp" "$BOOT_TMP/$folder/"
 done
 # The flasher names the profiles from andr36oid-profiles.txt: every folder needs its line
 for d in "$BOOT_TMP"/Panels/*/ "$BOOT_TMP"/Devices/*/ "$BOOT_TMP"/Experimental/*/; do
@@ -269,7 +269,7 @@ if python3 -c 'import PIL' 2>/dev/null; then
     done
     grep -v '^#' experimental-dtbs/list.txt | while read -r name folder size; do
         [ "$size" = 720x720 ] || continue
-        cp "$BOOT_TMP"/Panels/R36S-Plus/battery_*.bmp "$BOOT_TMP/Experimental/$folder/"
+        cp "$BOOT_TMP"/Panels/R36S-Plus/battery_*.bmp "$BOOT_TMP/$folder/"
     done
 fi
 # The generators aren't needed on the card
@@ -282,11 +282,17 @@ fi
 # (bootloader/build-uboot.sh) reads rg351*-uboot.dtb instead, older ones and the
 # U-Boot on the eMMC of some clones the -kernel names. Ship the same file under all
 # six names at the top and in every screen folder.
-for d in "$BOOT_TMP" "$BOOT_TMP"/Panels/* "$BOOT_TMP"/Experimental/*; do
+for d in "$BOOT_TMP" "$BOOT_TMP"/Panels/* "$BOOT_TMP"/Devices/* "$BOOT_TMP"/Experimental/*; do
     [ -f "$d/rg351mp-kernel.dtb" ] || continue
     for name in rg351v-kernel rg351p-kernel rg351mp-uboot rg351v-uboot rg351p-uboot; do
         cp "$d/rg351mp-kernel.dtb" "$d/$name.dtb"
     done
+done
+# Boards that left Experimental keep a copy there, listed as hidden in the profile list:
+# flasher v0.3.3 converts EE clone DTBs from Experimental/EE-G80-Panel8, and cards set up
+# before the move name that folder in andr36oid-profile.txt.
+for d in EE-G80-Panel8; do
+    cp -r "$BOOT_TMP/Devices/$d" "$BOOT_TMP/Experimental/$d"
 done
 # The other consoles' folders (BOOT/Devices) bring their U-Boot file under one
 # name. Ship it under all six too: U-Boot asks for the name of whatever board id it

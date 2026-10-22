@@ -20,3 +20,7 @@ R46H  1024x768 screen
 R50S  480x854 screen, mounted sideways
 D-28S Diium D-28S, 480x640 screen, mounted sideways
 G350  BatleXP G350, 640x480 screen (not tested on the console yet)
+EE-G80-Panel8
+      G80C / G80CA / G80D with panel 8, and R36S V12 clones wired like the G80
+      (try this one first on a V12), 640x480 screen. Was in Experimental until
+      it was proven on the G80C.

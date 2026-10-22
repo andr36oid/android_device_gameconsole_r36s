@@ -110,6 +110,7 @@ fi
 # reached from a PC (an install on the built-in eMMC). It replaces the boot log.
 #   rg351mp: Start = GPIO3_B4 (d12), GRF_GPIO3B_P bits 8-9
 #   rg351v:  Start = GPIO3_D1 (d25), GRF_GPIO3D_P bits 2-3
+setenv safe_args ""
 setenv go_safe no
 if test "${go_bootlog}" = "yes"; then
     if test "${hwrev}" = "rg351mp"; then
@@ -122,6 +123,7 @@ if test "${go_bootlog}" = "yes"; then
     fi
 fi
 if test "${go_safe}" = "yes"; then
+    setenv safe_args "androidboot.andr36oid_safe=1"
     setenv go_bootlog no
     lcd setfg white
     lcd setline 10
@@ -214,7 +216,7 @@ then
     if test "${bootpart}" = "1:1"; then
         setenv emmc_args "dw_mmc_rockchip.builtin_emmc=1"
     fi
-    setenv bootargs "${bootrootfs} ${android} ${android2} ${bootdevs} ${console} ${emmc_args} ${bootlog_args}"
+    setenv bootargs "${bootrootfs} ${android} ${android2} ${bootdevs} ${console} ${emmc_args} ${bootlog_args} ${safe_args}"
     booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
 else
     load mmc ${bootpart} ${kernel_addr_r} Image
@@ -235,6 +237,6 @@ else
         load mmc ${bootpart} ${ramdisk_addr_r} ramdisk.uimg
     fi
     # emmc_args after the tweaks: kernel-tweaks.txt can't switch an eMMC install's eMMC off
-    setenv bootargs "${bootrootfs} ${android} ${android2} ${bootdevs} ${console} ${kt_args} ${emmc_args} ${bootlog_args}"
+    setenv bootargs "${bootrootfs} ${android} ${android2} ${bootdevs} ${console} ${kt_args} ${emmc_args} ${bootlog_args} ${safe_args}"
     booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
 fi

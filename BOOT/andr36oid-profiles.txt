@@ -55,3 +55,4 @@ Experimental/Soy-Panel7|Soy Sauce|Soy Sauce — Panel 7|experimental
 Experimental/Soy-Panel7-253x|Soy Sauce|Soy Sauce — Panel 7, Batch 253x|experimental
 Experimental/Soy-V04-Panel2|Soy Sauce|Soy Sauce Y3506 V04 — Panel 2|experimental
 Experimental/Soy-V05-2601|Soy Sauce|Soy Sauce Y3506 V05 — Batch 2601|experimental
+Experimental/R36S-Panel4-Type1|R36S|R36S — Panel 4 Type 1 (replacement screen) — untested|experimental

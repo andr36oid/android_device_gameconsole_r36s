@@ -184,6 +184,9 @@ device_profile() {  # <folder> <dtb name> <extra kernel arguments>
 }
 # R46H: 1024x768 at 304 dpi
 device_profile R46H rk3326-r46h-android.dtb "androidboot.lcd_density=304"
+# R45H: the same 1024x768 board as R46H with the HL-R45H / HL-R36H ProMax panel
+# (elida,kd35t133). Untested by andr36oid - flagged experimental in the profile list.
+device_profile R45H rk3326-r45h-android.dtb "androidboot.lcd_density=304"
 # R50S: the 480x854 panel is mounted sideways
 device_profile R50S rk3326-r50s-android.dtb "androidboot.sf_orientation=ORIENTATION_270 fbcon=rotate:3"
 # Diium D-28S: an EE clone whose 480x640 panel is mounted sideways
@@ -228,6 +231,7 @@ if python3 -c 'import PIL' 2>/dev/null; then
     python3 BOOT/gen-logo.py --build "$VERSION" -o "$BOOT_TMP/logo.bmp"
     python3 BOOT/gen-logo.py --build "$VERSION" -w 720 -H 720 -o "$BOOT_TMP/Panels/R36S-Plus/logo.bmp"
     python3 BOOT/gen-logo.py --build "$VERSION" -w 1024 -H 768 -o "$BOOT_TMP/Devices/R46H/logo.bmp"
+    python3 BOOT/gen-logo.py --build "$VERSION" -w 1024 -H 768 -o "$BOOT_TMP/Devices/R45H/logo.bmp"
     # the R50S panel is 480x854 mounted sideways: drawn landscape, stored turned
     python3 BOOT/gen-logo.py --build "$VERSION" -w 854 -H 480 --turn -o "$BOOT_TMP/Devices/R50S/logo.bmp"
     # Draw separately so the version label also clears U-Boot after rotation.
@@ -262,6 +266,7 @@ if python3 -c 'import PIL' 2>/dev/null; then
     python3 BOOT/gen-charge.py -o "$BOOT_TMP"
     python3 BOOT/gen-charge.py -w 720 -H 720 -o "$BOOT_TMP/Panels/R36S-Plus"
     python3 BOOT/gen-charge.py -w 1024 -H 768 -o "$BOOT_TMP/Devices/R46H"
+    python3 BOOT/gen-charge.py -w 1024 -H 768 -o "$BOOT_TMP/Devices/R45H"
     python3 BOOT/gen-charge.py -w 854 -H 480 --turn -o "$BOOT_TMP/Devices/R50S"
     for f in "$BOOT_TMP"/battery_*.bmp; do
         python3 -c 'import sys; from PIL import Image; Image.open(sys.argv[1]).rotate(90, expand=True).save(sys.argv[2], format="BMP")' \

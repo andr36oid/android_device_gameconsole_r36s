@@ -18,6 +18,7 @@ Panels/R36S-Plus|R36S Plus|R36S Plus — 720 × 720|
 Devices/D-28S|D-28S|Diium D-28S|
 Devices/G350|G350|BatleXP G350|
 Devices/R46H|R46H|R46H|
+Devices/R45H|R45H|R45H (HL-R45H / HL-R36H ProMax) — untested|experimental
 Devices/R50S|R50S|R50S|
 Devices/EE-G80-Panel8|G80|G80C / G80CA / G80D / R36S V12 wired like the G80 — Panel 8|also=R36S V12 clone
 Experimental/EE-G80-Panel8|G80|G80C / G80CA / G80D — Panel 8 (older flashers)|hidden
@@ -34,6 +35,7 @@ Experimental/Kinhank-K36|K36 / HG36|Kinhank K36|experimental
 Experimental/EE-K36-Panel4|K36 / HG36|K36 / RX6S — Panel 4|experimental
 Experimental/RX6H|RX6H|RX6H|experimental
 Experimental/EE-V12-Var1-Panel8|R36S V12 clone|R36S V12 clone — Variant 1, Panel 8|
+Experimental/EE-V12-Var1-Panel3|R36S V12 clone|R36S V12 clone — Variant 1, Panel 3|experimental
 Experimental/EE-V12-Var2|R36S V12 clone|R36S V12 clone — Variant 2|experimental
 Experimental/EE-V12-Var3-Panel3|R36S V12 clone|R36S V12 clone — Variant 3, Panel 3|experimental
 Experimental/EE-V12-Var3-PanelA|R36S V12 clone|R36S V12 clone — Variant 3, Panel A|experimental

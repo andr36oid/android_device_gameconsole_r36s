@@ -15,6 +15,7 @@ kinhank-k36             Experimental/Kinhank-K36
 k36-panel4              Experimental/EE-K36-Panel4
 rx6h                    Experimental/RX6H
 v12-var1-panel8         Experimental/EE-V12-Var1-Panel8
+v12-var1-panel3         Experimental/EE-V12-Var1-Panel3
 v12-var2                Experimental/EE-V12-Var2
 v12-var3-panel3         Experimental/EE-V12-Var3-Panel3
 v12-var3-panela         Experimental/EE-V12-Var3-PanelA

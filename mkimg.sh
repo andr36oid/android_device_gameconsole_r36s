@@ -20,14 +20,18 @@ AUTOAPK_SECTORS=4194304    # 2 GiB
 AUTOAPK_END=$((AUTOAPK_START + AUTOAPK_SECTORS - 1))
 # + 8 MiB: the two placeholders and the backup GPT
 IMG_SECTORS=$((AUTOAPK_END + 1 + 16384))
-# system as compressed EROFS (lz4hc), read by the kernel's fs/erofs (backported from
-# Linux 5.4): about 850 MB instead of 2.2 GB of ext4, and apps start much faster from
-# a slow SD card. ANDR36OID_SYSTEM_FS=ext4 builds the old ext4 system for comparison.
-# The ramdisk's fstab has an ext4 and an erofs line for /system; the first that mounts
-# wins. mkfs.erofs/fsck.erofs: erofs-utils 1.8 or newer (MKFS_EROFS/FSCK_EROFS, else
-# /andr36oid/tooling/erofs-utils, see the README there, else PATH).
+# system and vendor as compressed EROFS (lz4hc), read by the kernel's fs/erofs
+# (backported from Linux 5.4): system is about 850 MB instead of 2.2 GB of ext4, and
+# apps start much faster from a slow SD card. Vendor gets the same treatment so its
+# libraries and HALs load just as quickly. ANDR36OID_SYSTEM_FS=ext4 /
+# ANDR36OID_VENDOR_FS=ext4 build the old ext4 partitions for comparison. The ramdisk's
+# fstab already has both an ext4 and an erofs line for /system and /vendor; the first
+# that mounts wins. mkfs.erofs/fsck.erofs: erofs-utils 1.8 or newer (MKFS_EROFS/
+# FSCK_EROFS, else /andr36oid/tooling/erofs-utils, see the README there, else PATH).
 SYSTEM_FS=${ANDR36OID_SYSTEM_FS:-erofs}
 case $SYSTEM_FS in erofs | ext4) ;; *) echo "ANDR36OID_SYSTEM_FS must be erofs or ext4"; exit 1 ;; esac
+VENDOR_FS=${ANDR36OID_VENDOR_FS:-erofs}
+case $VENDOR_FS in erofs | ext4) ;; *) echo "ANDR36OID_VENDOR_FS must be erofs or ext4"; exit 1 ;; esac
 TMPDIR=$(mktemp -d)
 # A build that stops (error, Ctrl-C, kill) leaves no half-made 3 GB image behind.
 # Only the one this run made, and never once it is finished. Full path: the
@@ -334,7 +338,7 @@ build_info() {
     }
     echo "format=1"
     echo "system_fs=$SYSTEM_FS"
-    echo "vendor_fs=ext4"
+    echo "vendor_fs=$VENDOR_FS"
     for key in ro.andr36oid.version ro.product.build.version.incremental; do
         prop system/product/build.prop "$key"
     done
@@ -403,9 +407,10 @@ if file "$SYS_SRC" | grep -qi "Android sparse image"; then
 else
     cp "$SYS_SRC" "$SYS_RAW"
 fi
-if [ "$SYSTEM_FS" = erofs ]; then
-    # The build makes ext4 (with Android's owners, modes, SELinux labels and file
-    # capabilities); erofs/ext4-to-erofs.sh carries all of them over unchanged.
+# ext4 -> EROFS, shared by the system and vendor partitions. The build makes ext4
+# (with Android's owners, modes, SELinux labels and file capabilities);
+# erofs/ext4-to-erofs.sh carries all of them over unchanged.
+resolve_erofs_tools() {
     # MKFS_EROFS/FSCK_EROFS, else our 1.8 copy, else PATH (often Ubuntu's 1.7.1)
     for t in mkfs fsck; do
         v=$(echo "$t" | tr a-z A-Z)_EROFS
@@ -419,12 +424,18 @@ if [ "$SYSTEM_FS" = erofs ]; then
     done
     "$MKFS_EROFS" --version 2>/dev/null | grep -Eq 'erofs-utils\) (1\.([89]|[1-9][0-9])|[2-9])' ||
         die "$MKFS_EROFS is not erofs-utils 1.8 or newer"
+}
+to_erofs() { # to_erofs <raw-ext4-in> <erofs-out> <label>
+    resolve_erofs_tools
     TMPDIR=$TMPDIR MKFS_EROFS=$MKFS_EROFS FSCK_EROFS=$FSCK_EROFS \
-        erofs/ext4-to-erofs.sh "$SYS_RAW" "$SYS_EROFS" || die "could not make the EROFS system"
+        erofs/ext4-to-erofs.sh "$1" "$2" || die "could not make the EROFS $3"
     # Only lz4 with 0padding (incompat bit 0x1): the kernel's 5.4 erofs refuses
     # anything else, and the console would not start
-    incompat=$(od -An -tu4 -j $((1024 + 80)) -N4 "$SYS_EROFS" | tr -d ' ')
-    [ "$incompat" -le 1 ] || die "the EROFS system uses features the kernel can't read ($incompat)"
+    incompat=$(od -An -tu4 -j $((1024 + 80)) -N4 "$2" | tr -d ' ')
+    [ "$incompat" -le 1 ] || die "the EROFS $3 uses features the kernel can't read ($incompat)"
+}
+if [ "$SYSTEM_FS" = erofs ]; then
+    to_erofs "$SYS_RAW" "$SYS_EROFS" system
     rm -f "$SYS_RAW"
     mv "$SYS_EROFS" "$SYS_RAW"
 fi
@@ -444,6 +455,12 @@ if file "$VENDOR_SRC" | grep -qi "Android sparse image"; then
     simg2img "$VENDOR_SRC" "$VENDOR_RAW"
 else
     cp "$VENDOR_SRC" "$VENDOR_RAW"
+fi
+if [ "$VENDOR_FS" = erofs ]; then
+    VND_EROFS="$TMPDIR/vendor.erofs"
+    to_erofs "$VENDOR_RAW" "$VND_EROFS" vendor
+    rm -f "$VENDOR_RAW"
+    mv "$VND_EROFS" "$VENDOR_RAW"
 fi
 if [ "$(stat -c %s "$VENDOR_RAW")" -gt $(((884735 - 557056 + 1) * 512)) ]; then
     echo "vendor.img is larger than the vendor partition"

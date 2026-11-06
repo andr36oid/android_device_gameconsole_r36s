@@ -37,3 +37,4 @@ soysauce-v04-panel2     Experimental/Soy-V04-Panel2
 soysauce-v05-2601       Experimental/Soy-V05-2601
 panel4-type1            Experimental/R36S-Panel4-Type1
 kirbx                   Experimental/KirbX-Clone
+grc802                  Experimental/R36-Ultra-X

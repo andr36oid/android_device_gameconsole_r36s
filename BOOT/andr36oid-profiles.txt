@@ -57,3 +57,4 @@ Experimental/Soy-V04-Panel2|Soy Sauce|Soy Sauce Y3506 V04 — Panel 2|experiment
 Experimental/Soy-V05-2601|Soy Sauce|Soy Sauce Y3506 V05 — Batch 2601|experimental
 Experimental/R36S-Panel4-Type1|R36S|R36S — Panel 4 Type 1 (replacement screen) — untested|experimental
 Experimental/KirbX-Clone|R36S|R36S clone "KirbX" (Soy Y3506, 40 MHz panel) - untested|experimental
+Devices/OkRoll-Clone|OkRoll clone|OkRoll clone — 640 × 480 — untested, stock DTB only|experimental

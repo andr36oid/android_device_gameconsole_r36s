@@ -24,3 +24,7 @@ EE-G80-Panel8
       G80C / G80CA / G80D with panel 8, and R36S V12 clones wired like the G80
       (try this one first on a V12), 640x480 screen. Was in Experimental until
       it was proven on the G80C.
+
+OkRoll-Clone
+      EXPERIMENTAL: mystery RK3326 handheld, ST7703 640x480 panel, four direct
+      SARADC stick channels. Stock-DTB-only profile; untested on hardware.
